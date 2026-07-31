@@ -31,8 +31,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 /* Filters */
 .filter-bar { background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
 .filter-bar label { font-size:13px; color:#64748b; font-weight:500; }
-.filter-bar select, .filter-bar input { border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; }
-.filter-bar select:focus { border-color:#667eea; }
+.filter-bar select, .filter-bar input[type="date"] { border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; font-family:inherit; }
+.filter-bar select:focus, .filter-bar input[type="date"]:focus { border-color:#667eea; }
+.filter-bar input[type="date"] { min-width:130px; }
+.date-range-group { display:flex; align-items:center; gap:8px; }
+.date-range-group .date-sep { color:#94a3b8; font-size:12px; }
 
 /* Charts Grid */
 .charts-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(460px,1fr)); gap:20px; margin-bottom:20px; }
@@ -80,15 +83,11 @@ tr:hover td { background:#f8fafc; }
 <!-- Filter Bar -->
 <div class="filter-bar">
   <label>时间范围</label>
-  <select id="dateRange" onchange="applyFilter()">
-    <option value="all">全部 (2026.01-07)</option>
-    <option value="7">7月</option>
-    <option value="6">6月</option>
-    <option value="5">5月</option>
-    <option value="4">4月</option>
-    <option value="1">1-3月</option>
-    <option value="last30">最近30天</option>
-  </select>
+  <div class="date-range-group">
+    <input type="date" id="startDate" onchange="applyFilter()">
+    <span class="date-sep">至</span>
+    <input type="date" id="endDate" onchange="applyFilter()">
+  </div>
   <label style="margin-left:16px;">商品</label>
   <select id="productFilter" onchange="applyFilter()">
     <option value="all">全部商品</option>
@@ -161,7 +160,7 @@ tr:hover td { background:#f8fafc; }
 
 </div>
 
-<script src="dashboard_data.js?v=10"></script>
+<script src="dashboard_data.js?v=11"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -190,23 +189,33 @@ function initDashboard() {
     pf.appendChild(opt);
   });
 
+  // Initialize date range inputs to full data range
+  const allDates = d.daily_summary.map(x => x.date).sort();
+  if (allDates.length > 0) {
+    document.getElementById('startDate').value = allDates[0];
+    document.getElementById('endDate').value = allDates[allDates.length - 1];
+  }
+
   applyFilter();
 }
 
 // ============ 筛选 ============
 function applyFilter() {
-  const range = document.getElementById('dateRange').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
   const pid = document.getElementById('productFilter').value;
   const all = FULL_DATA.daily_summary;
 
   let filtered = all;
   let currentMonth = null;
-  if (range === '7') { filtered = all.filter(d => d.date.startsWith('2026-07')); currentMonth = '2026-07'; }
-  else if (range === '6') { filtered = all.filter(d => d.date.startsWith('2026-06')); currentMonth = '2026-06'; }
-  else if (range === '5') { filtered = all.filter(d => d.date.startsWith('2026-05')); currentMonth = '2026-05'; }
-  else if (range === '4') { filtered = all.filter(d => d.date.startsWith('2026-04')); currentMonth = '2026-04'; }
-  else if (range === '1') filtered = all.filter(d => d.date >= '2026-01-01' && d.date <= '2026-03-31');
-  else if (range === 'last30') filtered = all.slice(-30);
+
+  if (startDate && endDate) {
+    filtered = all.filter(d => d.date >= startDate && d.date <= endDate);
+    // Detect if the selected range falls entirely within a single month
+    if (startDate.slice(0, 7) === endDate.slice(0, 7)) {
+      currentMonth = startDate.slice(0, 7);
+    }
+  }
 
   // Filter SKU data
   let sku = FULL_DATA.sku_daily.filter(r => filtered.some(d => d.date === r.date));
@@ -262,8 +271,9 @@ function buildKPIs(data) {
   const completionPct = prog.completion_pre * 100;
 
   // Custom range label
-  const rng = document.getElementById('dateRange');
-  const rangeLabel = rng.options[rng.selectedIndex].text;
+  const s = document.getElementById('startDate').value;
+  const e = document.getElementById('endDate').value;
+  const rangeLabel = s && e ? `${s.replace(/-/g, '/')} ~ ${e.replace(/-/g, '/')}` : '全部';
 
   document.getElementById('kpiCards').innerHTML = `
     <div class="kpi-card">
