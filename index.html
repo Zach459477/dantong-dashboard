@@ -185,7 +185,7 @@ function initDashboard() {
   d.product_ranking.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.pid;
-    opt.textContent = p.name.substring(0, 30);
+    opt.textContent = p.pid + ' - ' + p.name.substring(0, 28);
     pf.appendChild(opt);
   });
 
