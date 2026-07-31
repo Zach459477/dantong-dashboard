@@ -161,7 +161,7 @@ tr:hover td { background:#f8fafc; }
 
 </div>
 
-<script src="dashboard_data.js?v=9"></script>
+<script src="dashboard_data.js?v=10"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -243,6 +243,8 @@ function buildKPIs(data) {
   const totalGmv = data.reduce((s,d)=>s+d.gmv,0);
   const totalGmvPost = data.reduce((s,d)=>s+(d.gmv_post||0),0);
   const totalOrders = data.reduce((s,d)=>s+d.orders,0);
+  const totalRefundQty = data.reduce((s,d)=>s+(d.refund_qty||0),0);
+  const totalPostQty = data.reduce((s,d)=>s+(d.post_qty||0),0);
   const totalUV = data.reduce((s,d)=>s+d.uv,0);
   const totalBuyers = data.reduce((s,d)=>s+d.buyers,0);
   const days = data.length;
@@ -272,7 +274,7 @@ function buildKPIs(data) {
     <div class="kpi-card" style="border-left-color:#ef4444;">
       <div class="label">累计GMV (退后)</div>
       <div class="value">¥${(totalGmvPost/10000).toFixed(1)}万</div>
-      <div class="sub">退款率 ${totalGmv > 0 ? ((1 - totalGmvPost/totalGmv) * 100).toFixed(1) : '0'}% · 累计退款 ¥${((totalGmv - totalGmvPost)/10000).toFixed(1)}万</div>
+      <div class="sub">退款率 ${totalGmv > 0 ? ((1 - totalGmvPost/totalGmv) * 100).toFixed(1) : '0'}% · 累计退款 ¥${((totalGmv - totalGmvPost)/10000).toFixed(1)}万<br>退款 ${totalRefundQty.toLocaleString()}件 · 退后 ${totalPostQty.toLocaleString()}件</div>
     </div>
     <div class="kpi-card">
       <div class="label">累计订单 · UV</div>
@@ -293,7 +295,7 @@ function buildKPIs(data) {
     <div class="kpi-card">
       <div class="label">最新日 (${last.date})</div>
       <div class="value">¥${last.gmv.toLocaleString()}</div>
-      ${last.gmv_post > 0 ? `<div class="sub">退后 ¥${last.gmv_post.toLocaleString()} · 退款 ¥${(last.gmv - last.gmv_post).toLocaleString()}</div>` : ''}
+      ${last.gmv_post > 0 ? `<div class="sub">退后 ¥${last.gmv_post.toLocaleString()} · 退款 ¥${(last.gmv - last.gmv_post).toLocaleString()}<br>退后 ${(last.post_qty||0).toLocaleString()}件 · 退款 ${(last.refund_qty||0).toLocaleString()}件</div>` : ''}
       <div class="meta-row">
         <div class="meta-item"><div class="meta-val">${last.orders}</div><div class="meta-label">订单</div></div>
         <div class="meta-item"><div class="meta-val">${last.uv}</div><div class="meta-label">UV</div></div>
