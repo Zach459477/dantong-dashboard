@@ -297,7 +297,7 @@ function buildKPIs(data) {
       <div class="sub">UV→买家转化 · 访客价值 ¥${totalUV>0?(totalGmv/totalUV).toFixed(1):0}</div>
     </div>
     <div class="kpi-card ${completionPct < 60 ? 'alert' : (completionPct < 80 ? 'warn' : '')}">
-      <div class="label">7月目标进度</div>
+      <div class="label">${prog.current_month || ''}目标进度</div>
       <div class="value">${completionPct.toFixed(1)}%</div>
       <div class="sub">¥${(prog.mtd_pre/10000).toFixed(1)}万 / ¥${(prog.target_pre/10000).toFixed(0)}万 · 时间进度${(prog.time_progress*100).toFixed(1)}%</div>
     </div>
