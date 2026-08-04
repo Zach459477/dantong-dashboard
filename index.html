@@ -8,60 +8,87 @@
 <meta http-equiv="Expires" content="0">
 <title>弹动猫超 - 销售数据看板</title>
 <style>
+:root {
+  --c-primary: #0d9488;
+  --c-primary-light: #14b8a6;
+  --c-primary-pale: #ccfbf1;
+  --c-primary-tint: #f0fdfa;
+  --c-accent: #f59e0b;
+  --c-danger: #ef4444;
+  --c-success: #22c55e;
+  --c-text: #1e293b;
+  --c-text-muted: #64748b;
+  --c-text-light: #94a3b8;
+  --c-border: #e2e8f0;
+  --c-bg: #f8fafc;
+  --c-card: #ffffff;
+  --c-shadow: rgba(13,148,136,.06);
+}
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background:#f5f6f8; color:#2c3e50; }
-.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; padding:20px 32px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-.header h1 { font-size:22px; font-weight:700; }
-.header .info { font-size:13px; opacity:.85; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background:var(--c-bg); color:var(--c-text); }
+.header { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color:#fff; padding:18px 32px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+.header h1 { font-size:21px; font-weight:700; letter-spacing:.5px; }
+.header .info { font-size:13px; opacity:.88; margin-top:2px; }
 .container { max-width:1400px; margin:0 auto; padding:20px 24px; }
+
+/* Navigation Bar */
+.nav-bar { position:sticky; top:0; z-index:100; background:rgba(255,255,255,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--c-border); display:flex; gap:4px; padding:0 24px; overflow-x:auto; }
+.nav-link { display:flex; align-items:center; gap:6px; padding:12px 20px; font-size:14px; font-weight:500; color:var(--c-text-muted); text-decoration:none; border-bottom:2px solid transparent; transition:all .2s; white-space:nowrap; cursor:pointer; }
+.nav-link:hover { color:var(--c-primary); background:var(--c-primary-tint); }
+.nav-link.active { color:var(--c-primary); border-bottom-color:var(--c-primary); font-weight:600; }
+
+/* Section anchor offset */
+.section-anchor { scroll-margin-top:52px; }
 
 /* KPI Cards */
 .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
-.kpi-card { background:#fff; border-radius:12px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,.06); border-left:4px solid #667eea; }
-.kpi-card.warn { border-left-color:#f59e0b; }
-.kpi-card.alert { border-left-color:#ef4444; }
-.kpi-card .label { font-size:13px; color:#8896a4; margin-bottom:6px; }
-.kpi-card .value { font-size:26px; font-weight:700; color:#1e293b; }
-.kpi-card .sub { font-size:12px; color:#94a3b8; margin-top:4px; }
+.kpi-card { background:var(--c-card); border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px var(--c-shadow); border-left:4px solid var(--c-primary); transition:box-shadow .2s; }
+.kpi-card:hover { box-shadow:0 4px 12px var(--c-shadow); }
+.kpi-card.warn { border-left-color:var(--c-accent); }
+.kpi-card.alert { border-left-color:var(--c-danger); }
+.kpi-card .label { font-size:13px; color:var(--c-text-light); margin-bottom:6px; }
+.kpi-card .value { font-size:26px; font-weight:700; color:var(--c-text); }
+.kpi-card .sub { font-size:12px; color:var(--c-text-light); margin-top:4px; line-height:1.6; }
 .kpi-card .meta-row { display:flex; justify-content:space-between; margin-top:8px; }
 .kpi-card .meta-item { text-align:center; }
 .kpi-card .meta-val { font-size:15px; font-weight:600; color:#475569; }
-.kpi-card .meta-label { font-size:11px; color:#94a3b8; }
+.kpi-card .meta-label { font-size:11px; color:var(--c-text-light); }
 
 /* Filters */
-.filter-bar { background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-.filter-bar label { font-size:13px; color:#64748b; font-weight:500; }
-.filter-bar select, .filter-bar input[type="date"] { border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; font-size:13px; outline:none; font-family:inherit; }
-.filter-bar select:focus, .filter-bar input[type="date"]:focus { border-color:#667eea; }
+.filter-bar { background:var(--c-card); border-radius:10px; padding:14px 20px; margin-bottom:20px; box-shadow:0 1px 3px var(--c-shadow); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.filter-bar label { font-size:13px; color:var(--c-text-muted); font-weight:500; }
+.filter-bar select, .filter-bar input[type="date"] { border:1px solid var(--c-border); border-radius:8px; padding:7px 12px; font-size:13px; outline:none; font-family:inherit; transition:border-color .2s; }
+.filter-bar select:focus, .filter-bar input[type="date"]:focus { border-color:var(--c-primary); box-shadow:0 0 0 3px var(--c-primary-tint); }
 .filter-bar input[type="date"] { min-width:130px; }
 .date-range-group { display:flex; align-items:center; gap:8px; }
-.date-range-group .date-sep { color:#94a3b8; font-size:12px; }
+.date-range-group .date-sep { color:var(--c-text-light); font-size:12px; }
 
 /* Charts Grid */
 .charts-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(460px,1fr)); gap:20px; margin-bottom:20px; }
-.chart-card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.chart-card { background:var(--c-card); border-radius:10px; padding:20px; box-shadow:0 1px 3px var(--c-shadow); }
 .chart-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; color:#334155; }
 .chart-card.full-width { grid-column:1 / -1; }
 .chart-card canvas { width:100% !important; }
 
 /* Tables */
-.table-card { background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); overflow-x:auto; }
+.table-card { background:var(--c-card); border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 1px 3px var(--c-shadow); overflow-x:auto; }
 .table-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; color:#334155; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
-th { background:#f8fafc; padding:10px 12px; text-align:left; font-weight:600; color:#64748b; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+th { background:var(--c-primary-tint); padding:10px 12px; text-align:left; font-weight:600; color:var(--c-text-muted); border-bottom:2px solid var(--c-primary-pale); white-space:nowrap; }
 td { padding:10px 12px; border-bottom:1px solid #f1f5f9; }
-tr:hover td { background:#f8fafc; }
+tr:hover td { background:var(--c-primary-tint); }
 .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
 .badge-green { background:#dcfce7; color:#16a34a; }
 .badge-yellow { background:#fef3c7; color:#d97706; }
 .badge-red { background:#fee2e2; color:#dc2626; }
 
-.footer { text-align:center; padding:20px; color:#94a3b8; font-size:12px; }
+.footer { text-align:center; padding:20px; color:var(--c-text-light); font-size:12px; }
 
 /* Responsive */
 @media (max-width:768px) {
   .charts-grid { grid-template-columns:1fr; }
   .kpi-grid { grid-template-columns:repeat(2,1fr); }
+  .nav-link { padding:10px 14px; font-size:13px; }
 }
 </style>
 </head>
@@ -75,27 +102,38 @@ tr:hover td { background:#f8fafc; }
   <div style="font-size:12px;opacity:.8;" id="updateTime"></div>
 </div>
 
+<nav class="nav-bar" id="navBar">
+  <a class="nav-link active" data-target="section-overview">📋 概览</a>
+  <a class="nav-link" data-target="section-trends">📈 趋势</a>
+  <a class="nav-link" data-target="section-activities">📅 活动</a>
+  <a class="nav-link" data-target="section-forecast">📦 预测</a>
+  <a class="nav-link" data-target="section-ranking">🏆 排行</a>
+</nav>
+
 <div class="container">
 
-<!-- KPI Cards -->
-<div class="kpi-grid" id="kpiCards"></div>
+<!-- KPI + Filter -->
+<div id="section-overview" class="section-anchor">
+  <div class="kpi-grid" id="kpiCards"></div>
 
-<!-- Filter Bar -->
-<div class="filter-bar">
-  <label>时间范围</label>
-  <div class="date-range-group">
-    <input type="date" id="startDate" onchange="applyFilter()">
-    <span class="date-sep">至</span>
-    <input type="date" id="endDate" onchange="applyFilter()">
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <label>时间范围</label>
+    <div class="date-range-group">
+      <input type="date" id="startDate" onchange="applyFilter()">
+      <span class="date-sep">至</span>
+      <input type="date" id="endDate" onchange="applyFilter()">
+    </div>
+    <label style="margin-left:16px;">商品</label>
+    <select id="productFilter" onchange="applyFilter()">
+      <option value="all">全部商品</option>
+    </select>
   </div>
-  <label style="margin-left:16px;">商品</label>
-  <select id="productFilter" onchange="applyFilter()">
-    <option value="all">全部商品</option>
-  </select>
 </div>
 
 <!-- Charts -->
-<div class="charts-grid">
+<div id="section-trends" class="section-anchor">
+  <div class="charts-grid">
   <div class="chart-card full-width">
     <h3>📈 每日GMV趋势</h3>
     <canvas id="gmvChart"></canvas>
@@ -117,8 +155,10 @@ tr:hover td { background:#f8fafc; }
     <canvas id="monthVolumeChart"></canvas>
   </div>
 </div>
+</div>
 
 <!-- 甘特图：7月 & 8月 -->
+<div id="section-activities" class="section-anchor">
 <div class="charts-grid">
   <div class="chart-card full-width">
     <h3>📅 7月活动甘特图（活动结果）</h3>
@@ -131,27 +171,32 @@ tr:hover td { background:#f8fafc; }
     <div style="font-size:12px;color:#94a3b8;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;" id="ganttAugLegend"></div>
   </div>
 </div>
+</div>
 
 <!-- 消耗预测 -->
+<div id="section-forecast" class="section-anchor">
 <div class="chart-card full-width" style="margin-bottom:20px;">
   <h3>📦 消耗预测（基于近7天销售速度 + 活动日历修正）</h3>
   <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; margin-top:12px;" id="forecastSummary"></div>
   <div style="overflow-x:auto; margin-top:16px;">
     <table><thead>
       <tr>
-        <th>排名</th><th>商品ID</th><th>商品</th><th>近7天实销</th><th>日均件数</th><th style="background:#eef2ff;color:#4f46e5;">预计7天消耗</th><th style="background:#fef3c7;color:#92400e;">预计28天消耗</th><th style="background:#dcfce7;color:#166534;">预计28天(活动修正)</th>
+        <th>排名</th><th>商品ID</th><th>商品</th><th>近7天实销</th><th>日均件数</th><th style="background:#ccfbf1;color:#0d9488;">预计7天消耗</th><th style="background:#fef3c7;color:#92400e;">预计28天消耗</th><th style="background:#dcfce7;color:#166534;">预计28天(活动修正)</th>
       </tr>
     </thead><tbody id="forecastTable"></tbody></table>
   </div>
   <div style="font-size:11px;color:#94a3b8;margin-top:8px;" id="forecastDateNote">* 基于近7天销售数据推算。活动修正版结合8月活动日历（超级88/七夕/超级星期五等），按历史 uplift 系数调整。</div>
 </div>
+</div>
 
 <!-- Product Ranking -->
+<div id="section-ranking" class="section-anchor">
 <div class="table-card">
   <h3>🏆 商品GMV排行 TOP20</h3>
   <table><thead>
-    <tr><th>排名</th><th>商品ID</th><th>商品名称</th><th>累计GMV</th><th>累计销售件数</th><th style="background:#eef2ff;color:#4f46e5;">筛选月MTD</th><th>月占比</th><th>年占比</th><th>订单数</th><th>UV</th><th>支付用户数</th><th>CVR</th><th>活跃天数</th><th>日均GMV</th></tr>
+    <tr><th>排名</th><th>商品ID</th><th>商品名称</th><th>累计GMV</th><th>累计销售件数</th><th style="background:#ccfbf1;color:#0d9488;">筛选月MTD</th><th>月占比</th><th>年占比</th><th>订单数</th><th>UV</th><th>支付用户数</th><th>CVR</th><th>活跃天数</th><th>日均GMV</th></tr>
   </thead><tbody id="productTable"></tbody></table>
+</div>
 </div>
 
 <div class="footer">
@@ -160,7 +205,7 @@ tr:hover td { background:#f8fafc; }
 
 </div>
 
-<script src="dashboard_data.js?v=12"></script>
+<script src="dashboard_data.js?v=13"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -448,7 +493,7 @@ function drawBarChart(canvas, labels, values, colors, yFmt, lineSeries) {
     const x = pad.l + barGap * i + (barGap - barW) / 2;
     const h = (v / yMax) * ph;
     const y = pad.t + ph - h;
-    ctx.fillStyle = colors[i] || colors[colors.length - 1] || '#667eea';
+    ctx.fillStyle = colors[i] || colors[colors.length - 1] || '#0d9488';
     roundRect(ctx, x, y, barW, h, 4);
     ctx.fill();
   });
@@ -503,26 +548,26 @@ function buildCharts(data) {
   const yFmtNum = v => v.toLocaleString();
 
   drawLineChart(document.getElementById('gmvChart'), data,
-    [{ values: gmvData, color: '#667eea', fill: 'rgba(102,126,234,0.08)', label: 'GMV' }], yFmtK);
+    [{ values: gmvData, color: '#0d9488', fill: 'rgba(13,148,136,0.08)', label: 'GMV' }], yFmtK);
 
   drawLineChart(document.getElementById('uvChart'), data,
     [{ values: uvData, color: '#3b82f6', label: 'UV' },
      { values: buyerData, color: '#f59e0b', label: '买家' }], yFmtNum);
 
   drawLineChart(document.getElementById('cvrChart'), data,
-    [{ values: cvrData, color: '#10b981', fill: 'rgba(16,185,129,0.06)', label: 'CVR' }], yFmtPct);
+    [{ values: cvrData, color: '#14b8a6', fill: 'rgba(20,184,166,0.06)', label: 'CVR' }], yFmtPct);
 
   // 月度图表
   const monthly = FULL_DATA.monthly_summary;
   const mNames = monthly.map(m => m.month_name);
   const mVals = monthly.map(m => m.gmv);
-  const mColors = monthly.map((_, i) => i === monthly.length - 1 ? '#667eea' : '#93c5fd');
+  const mColors = monthly.map((_, i) => i === monthly.length - 1 ? '#0d9488' : '#5eead4');
 
   drawBarChart(document.getElementById('monthChart'), mNames, mVals, mColors,
     v => '¥' + (v / 10000).toFixed(1) + '万');
 
   drawBarChart(document.getElementById('monthVolumeChart'), mNames, monthly.map(m => m.orders),
-    monthly.map(() => '#a78bfa'),
+    monthly.map(() => '#2dd4bf'),
     v => v.toLocaleString(),
     { values: monthly.map(m => m.uv), color: '#f59e0b', yFmt: v => (v / 1000).toFixed(0) + 'k' });
 }
@@ -780,7 +825,7 @@ function buildForecast() {
   const augTotal = augCal.reduce((s, d) => s + (d.forecast_qty || 0), 0);
 
   document.getElementById('forecastSummary').innerHTML = `
-    <div class="kpi-card" style="border-left-color:#4f46e5;">
+    <div class="kpi-card" style="border-left-color:#0d9488;">
       <div class="label">📦 预计7天消耗</div>
       <div class="value">${total7d.toLocaleString()} <span style="font-size:14px;color:#94a3b8;">件</span></div>
       <div class="sub">约 ¥${(ranking.reduce((s,p)=>s+(p.avg_daily_gmv||0),0)*7/10000).toFixed(1)}万（按日均GMV估算）</div>
@@ -832,7 +877,7 @@ function buildForecast() {
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${name}</td>
         <td>${(p.recent_7d_qty||0).toLocaleString()}</td>
         <td>${(p.avg_daily_qty||0).toFixed(1)}</td>
-        <td style="font-weight:700;color:#4f46e5;background:#eef2ff;">${(p.forecast_7d||0).toLocaleString()}</td>
+        <td style="font-weight:700;color:#0d9488;background:#ccfbf1;">${(p.forecast_7d||0).toLocaleString()}</td>
         <td style="font-weight:700;color:#92400e;background:#fef9c3;">${(p.forecast_28d||0).toLocaleString()}</td>
         <td style="font-weight:700;color:${diffColor};background:#dcfce7;">${(p.forecast_28d_act||0).toLocaleString()}<br><span style="font-size:10px;font-weight:400;">${diff > 0 ? '+' : ''}${diffPct.toFixed(1)}%</span></td>
       </tr>`;
@@ -878,7 +923,7 @@ function buildProductTable(currentMonth) {
       <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
       <td style="font-weight:600;">¥${yearGmv.toLocaleString()}</td>
       <td>${yearQty.toLocaleString()}</td>
-      <td style="font-weight:600;color:#4f46e5;background:#eef2ff;">¥${mtdGmv.toLocaleString()}</td>
+      <td style="font-weight:600;color:#0d9488;background:#ccfbf1;">¥${mtdGmv.toLocaleString()}</td>
       <td><span class="badge ${shareBadge(monthShare)}">${monthShare}%</span></td>
       <td><span class="badge ${shareBadge(yearShare)}">${yearShare}%</span></td>
       <td>${p.qty.toLocaleString()}</td>
@@ -890,6 +935,42 @@ function buildProductTable(currentMonth) {
     </tr>`;
   }).join('');
 }
+
+// ============ 导航栏交互 ============
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.getElementById(link.dataset.target);
+    if (target) {
+      const navH = document.getElementById('navBar').offsetHeight;
+      const top = target.getBoundingClientRect().top + window.scrollY - navH - 4;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  });
+});
+
+// Scroll spy
+const navSections = ['section-overview','section-trends','section-activities','section-forecast','section-ranking'];
+let scrollTicking = false;
+window.addEventListener('scroll', () => {
+  if (!scrollTicking) {
+    requestAnimationFrame(() => {
+      const navH = document.getElementById('navBar').offsetHeight;
+      let active = navSections[0];
+      for (const id of navSections) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top - navH <= 10) {
+          active = id;
+        }
+      }
+      document.querySelectorAll('.nav-link').forEach(l => {
+        l.classList.toggle('active', l.dataset.target === active);
+      });
+      scrollTicking = false;
+    });
+    scrollTicking = true;
+  }
+});
 </script>
 
 </body>
