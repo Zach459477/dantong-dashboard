@@ -26,9 +26,70 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background:var(--c-bg); color:var(--c-text); }
-.header { background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color:#fff; padding:18px 32px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
-.header h1 { font-size:21px; font-weight:700; letter-spacing:.5px; }
-.header .info { font-size:13px; opacity:.88; margin-top:2px; }
+.header {
+  position: relative;
+  min-height: 118px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 45%, #14b8a6 100%);
+  color: #fff;
+  padding: 22px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  right: -8%;
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle, rgba(255,255,255,.14) 0%, transparent 65%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -5%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 60%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.header-content { position: relative; z-index: 2; }
+.header-brand { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.brand-badge {
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.32);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.header h1 { font-size:24px; font-weight:700; letter-spacing:.6px; text-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.header .info { font-size:13px; opacity:.92; margin-top:5px; line-height:1.5; }
+.header-visual {
+  position: absolute;
+  right: 150px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 230px;
+  height: 150px;
+  z-index: 1;
+  opacity: .96;
+  pointer-events: none;
+}
+.header-update { position: relative; z-index: 2; font-size: 12px; opacity: .88; text-align: right; }
+@media (max-width: 960px) {
+  .header-visual { display: none; }
+}
 .container { max-width:1400px; margin:0 auto; padding:20px 24px; }
 
 /* Navigation Bar */
@@ -95,11 +156,79 @@ tr:hover td { background:var(--c-primary-tint); }
 <body>
 
 <div class="header">
-  <div>
-    <h1>📊 弹动猫超 · 销售数据看板</h1>
+  <div class="header-content">
+    <div class="header-brand">
+      <div class="brand-badge">天猫超市</div>
+      <h1>弹动 · 销售数据看板</h1>
+    </div>
     <div class="info" id="headerInfo">加载中...</div>
   </div>
-  <div style="font-size:12px;opacity:.8;" id="updateTime"></div>
+
+  <div class="header-visual" aria-hidden="true">
+    <svg viewBox="0 0 230 150" xmlns="http://www.w3.org/2000/svg">
+      <!-- 背景大泡泡 -->
+      <circle cx="190" cy="35" r="22" fill="white" fill-opacity="0.08"/>
+      <circle cx="30" cy="120" r="16" fill="white" fill-opacity="0.06"/>
+      <circle cx="210" cy="110" r="12" fill="white" fill-opacity="0.07"/>
+
+      <!-- 水滴 -->
+      <path d="M165 115 Q165 108 170 102 Q175 108 175 115 A5 5 0 0 1 165 115" fill="#ccfbf1" fill-opacity="0.7"/>
+      <path d="M55 50 Q55 45 58 40 Q61 45 61 50 A3 3 0 0 1 55 50" fill="#ccfbf1" fill-opacity="0.6"/>
+      <path d="M200 135 Q200 130 203 126 Q206 130 206 135 A3 3 0 0 1 200 135" fill="#ccfbf1" fill-opacity="0.5"/>
+
+      <!-- 绿叶 -->
+      <path d="M25 75 Q35 65 45 75 Q40 85 25 85 Q20 80 25 75" fill="#34d399" fill-opacity="0.7"/>
+      <path d="M185 55 Q195 48 205 55 Q198 65 185 62 Q182 58 185 55" fill="#34d399" fill-opacity="0.6"/>
+      <path d="M20 45 Q28 38 36 45 Q30 53 20 50 Q17 47 20 45" fill="#34d399" fill-opacity="0.5"/>
+
+      <!-- 大洗发水瓶 -->
+      <g transform="translate(72, 16)">
+        <!-- 泵头 -->
+        <rect x="36" y="0" width="14" height="12" rx="3" fill="#0f766e"/>
+        <rect x="31" y="10" width="24" height="8" rx="2" fill="#115e59"/>
+        <rect x="39" y="18" width="8" height="10" fill="#115e59"/>
+        <!-- 瓶盖 -->
+        <rect x="33" y="26" width="20" height="10" rx="2" fill="#134e4a"/>
+        <!-- 瓶颈 -->
+        <rect x="37" y="34" width="12" height="12" fill="white" fill-opacity="0.9"/>
+        <!-- 瓶身 -->
+        <rect x="21" y="44" width="44" height="88" rx="14" fill="white" fill-opacity="0.9"/>
+        <!-- 标签 -->
+        <rect x="27" y="64" width="32" height="44" rx="6" fill="#0d9488"/>
+        <rect x="31" y="74" width="24" height="3" rx="1.5" fill="white" fill-opacity="0.85"/>
+        <rect x="31" y="82" width="18" height="3" rx="1.5" fill="white" fill-opacity="0.65"/>
+        <rect x="31" y="90" width="22" height="3" rx="1.5" fill="white" fill-opacity="0.5"/>
+        <!-- 高光 -->
+        <rect x="27" y="52" width="5" height="72" rx="2.5" fill="white" fill-opacity="0.35"/>
+      </g>
+
+      <!-- 小护发素管 -->
+      <g transform="translate(142, 50)">
+        <!-- 管身 -->
+        <path d="M8 12 L28 12 L32 76 Q32 82 26 82 L10 82 Q4 82 4 76 Z" fill="white" fill-opacity="0.85"/>
+        <!-- 瓶盖 -->
+        <rect x="10" y="0" width="16" height="14" rx="3" fill="#115e59"/>
+        <!-- 标签 -->
+        <rect x="10" y="32" width="16" height="32" rx="4" fill="#14b8a6"/>
+        <rect x="13" y="40" width="10" height="2" rx="1" fill="white" fill-opacity="0.8"/>
+        <rect x="13" y="46" width="8" height="2" rx="1" fill="white" fill-opacity="0.6"/>
+        <!-- 高光 -->
+        <rect x="9" y="18" width="3" height="52" rx="1.5" fill="white" fill-opacity="0.3"/>
+      </g>
+
+      <!-- 顶部与周围泡沫 -->
+      <circle cx="95" cy="18" r="7" fill="white" fill-opacity="0.75"/>
+      <circle cx="105" cy="14" r="5" fill="white" fill-opacity="0.6"/>
+      <circle cx="86" cy="24" r="4" fill="white" fill-opacity="0.5"/>
+      <circle cx="150" cy="46" r="5" fill="white" fill-opacity="0.55"/>
+      <circle cx="158" cy="40" r="3" fill="white" fill-opacity="0.4"/>
+      <circle cx="68" cy="98" r="4" fill="white" fill-opacity="0.35"/>
+      <circle cx="208" cy="86" r="4" fill="white" fill-opacity="0.35"/>
+      <circle cx="180" cy="138" r="5" fill="white" fill-opacity="0.25"/>
+    </svg>
+  </div>
+
+  <div class="header-update" id="updateTime"></div>
 </div>
 
 <nav class="nav-bar" id="navBar">
@@ -205,7 +334,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="dashboard_data.js?v=13"></script>
+<script src="dashboard_data.js?v=14"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
