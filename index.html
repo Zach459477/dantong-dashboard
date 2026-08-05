@@ -295,7 +295,7 @@ tr:hover td { background:var(--c-primary-tint); }
     <div style="font-size:12px;color:#94a3b8;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;" id="ganttJulyLegend"></div>
   </div>
   <div class="chart-card full-width">
-    <h3>📅 8月活动甘特图（活动计划）</h3>
+    <h3>📅 8月活动甘特图（活动结果）</h3>
     <canvas id="ganttAug"></canvas>
     <div style="font-size:12px;color:#94a3b8;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;" id="ganttAugLegend"></div>
   </div>
@@ -334,7 +334,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="dashboard_data.js?v=16"></script>
+<script src="dashboard_data.js?v=17"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -931,7 +931,38 @@ function buildGanttCharts() {
       ], gmv_post: 0, days: 7, avg_post: 0},
     ];
 
-    drawGantt('ganttAug', augAllActs, 31, '8月', false);
+    // 合并真实销售数据（按活动名称汇总，与7月保持一致）
+    const augSummary = d.aug_activity_summary;
+    augAllActs.forEach(act => {
+      const real = augSummary.find(s => s.name === act.name);
+      if (real) {
+        act.gmv_post = real.gmv_post;
+        act.avg_post = real.avg_post;
+        act.days = real.days;
+      }
+    });
+
+    // 按真实日报数据计算每段销售结果
+    augAllActs.forEach(act => {
+      act.segments.forEach(seg => {
+        let pre = 0, post = 0, cnt = 0;
+        const s = new Date(seg.start);
+        const e = new Date(seg.end);
+        for (let dt = new Date(s); dt <= e; dt.setDate(dt.getDate() + 1)) {
+          const ds = dt.toISOString().slice(0, 10);
+          if (dailyMap[ds]) {
+            pre += dailyMap[ds].gmv || 0;
+            post += dailyMap[ds].gmv_post || 0;
+            cnt++;
+          }
+        }
+        seg.gmv_pre = Math.round(pre);
+        seg.gmv_post = Math.round(post);
+        seg.days = cnt;
+      });
+    });
+
+    drawGantt('ganttAug', augAllActs, 31, '8月', true);
   }
 }
 
