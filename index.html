@@ -334,7 +334,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="dashboard_data.js?v=17"></script>
+<script src="dashboard_data.js?v=18"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -706,6 +706,9 @@ function buildGanttCharts() {
   const d = FULL_DATA;
   if (!d.july_activity_summary && !d.aug_activity_summary) return;
 
+  const dailyMap = {};
+  d.daily_summary.forEach(ds => { dailyMap[ds.date] = ds; });
+
   const COLORS = {
     'S': { bar: '#ef4444', text: '#991b1b', bg: '#fee2e2' },
     'A': { bar: '#f59e0b', text: '#92400e', bg: '#fef3c7' },
@@ -886,9 +889,6 @@ function buildGanttCharts() {
     });
 
     // Calculate gmv_post for each individual segment from daily data
-    const dailyMap = {};
-    d.daily_summary.forEach(ds => { dailyMap[ds.date] = ds; });
-
     julyAllActs.forEach(act => {
       act.segments.forEach(seg => {
         let pre = 0, post = 0, cnt = 0;
