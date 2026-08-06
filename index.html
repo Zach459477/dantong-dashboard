@@ -272,6 +272,11 @@ tr:hover td { background:var(--c-primary-tint); }
     <select id="productFilter" onchange="applyFilter()">
       <option value="all">全部商品</option>
     </select>
+    <label style="margin-left:16px;">排行依据</label>
+    <select id="rankingSort" onchange="applyFilter()">
+      <option value="month" selected>按当月MTD</option>
+      <option value="total">按累计GMV</option>
+    </select>
   </div>
 </div>
 
@@ -336,7 +341,7 @@ tr:hover td { background:var(--c-primary-tint); }
 <!-- Product Ranking -->
 <div id="section-ranking" class="section-anchor">
 <div class="table-card">
-  <h3>🏆 商品GMV排行 TOP20</h3>
+  <h3 id="rankingTitle">🏆 商品GMV排行 TOP20</h3>
   <table><thead>
     <tr><th>排名</th><th>商品ID</th><th>商品名称</th><th>累计GMV</th><th>累计销售件数</th><th style="background:#ccfbf1;color:#0d9488;">筛选月MTD</th><th>月占比</th><th>年占比</th><th>订单数</th><th>UV</th><th>支付用户数</th><th>CVR</th><th>活跃天数</th><th>日均GMV</th></tr>
   </thead><tbody id="productTable"></tbody></table>
@@ -349,7 +354,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="dashboard_data.js?v=20"></script>
+<script src="dashboard_data.js?v=21"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -1068,20 +1073,35 @@ function buildForecast() {
 // ============ Product Table ============
 function buildProductTable(currentMonth) {
   const pid = document.getElementById('productFilter').value;
-  let ranking, isMonthly;
+  const sortMode = document.getElementById('rankingSort').value; // 'month' | 'total'
+  let ranking, isMonthly, sortLabel;
 
-  if (currentMonth && FULL_DATA.monthly_products && FULL_DATA.monthly_products[currentMonth]) {
-    isMonthly = true;
-    ranking = FULL_DATA.monthly_products[currentMonth];
-    if (pid !== 'all') {
-      ranking = ranking.filter(p => p.pid === pid);
+  // 默认优先按当月MTD排序；只有用户显式选择"按累计GMV"时才用累计
+  if (sortMode === 'month') {
+    const targetMonth = currentMonth || getLatestMonth();
+    if (targetMonth && FULL_DATA.monthly_products && FULL_DATA.monthly_products[targetMonth]) {
+      isMonthly = true;
+      ranking = FULL_DATA.monthly_products[targetMonth];
+      sortLabel = '按' + parseInt(targetMonth.slice(5)) + '月MTD';
+    } else {
+      isMonthly = false;
+      ranking = FULL_DATA.product_ranking;
+      sortLabel = '按累计GMV';
     }
   } else {
     isMonthly = false;
-    ranking = pid === 'all'
-      ? FULL_DATA.product_ranking.slice(0, 20)
-      : FULL_DATA.product_ranking.filter(p => p.pid === pid);
+    ranking = FULL_DATA.product_ranking;
+    sortLabel = '按累计GMV';
   }
+
+  if (pid !== 'all') {
+    ranking = ranking.filter(p => p.pid === pid);
+  }
+
+  // 取 TOP20
+  ranking = ranking.slice(0, 20);
+
+  document.getElementById('rankingTitle').textContent = '🏆 商品GMV排行 TOP20（' + sortLabel + '）';
 
   document.getElementById('productTable').innerHTML = ranking.map((p, i) => {
     const cvrPct = (p.cvr * 100).toFixed(2);
@@ -1090,7 +1110,7 @@ function buildProductTable(currentMonth) {
     const yearShare = ((p.year_share || 0) * 100).toFixed(1);
     const shareBadge = (s) => s > 20 ? 'badge-green' : (s > 5 ? 'badge-yellow' : 'badge-red');
     const mtdGmv = isMonthly ? p.gmv : (p.month_gmv || 0);
-    const yearGmv = isMonthly ? p.year_gmv : p.gmv;
+    const yearGmv = isMonthly ? (p.year_gmv || 0) : p.gmv;
     const yearQty = isMonthly ? (p.year_qty || 0) : p.qty;
     return `<tr>
       <td style="font-weight:700;">#${i+1}</td>
@@ -1109,6 +1129,11 @@ function buildProductTable(currentMonth) {
       <td>¥${p.avg_daily_gmv.toLocaleString()}</td>
     </tr>`;
   }).join('');
+}
+
+function getLatestMonth() {
+  const months = Object.keys(FULL_DATA.monthly_products || {}).sort();
+  return months.length > 0 ? months[months.length - 1] : null;
 }
 
 // ============ 导航栏交互 ============
