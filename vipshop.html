@@ -209,7 +209,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=3"></script>
+<script src="vipshop_data.js?v=4"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -539,10 +539,10 @@ function buildProgress() {
   document.getElementById('progressList').innerHTML = pp.map(p => {
     const pct = p.progress * 100;
     const barColor = pct >= 100 ? '#22c55e' : (pct >= 60 ? '#f59e0b' : '#ef4444');
-    const yoyColor = p.yoy > 0 ? '#16a34a' : (p.yoy < 0 ? '#dc2626' : '#64748b');
-    const yoyText = p.yoy !== 0 ? `${p.yoy>0?'+':''}${(p.yoy*100).toFixed(1)}%` : '-';
     const gapText = p.gap > 0 ? `超目标 ¥${p.gap.toLocaleString()}` : `差 ¥${Math.abs(p.gap).toLocaleString()}`;
     const gapColor = p.gap > 0 ? '#16a34a' : '#dc2626';
+    const estPct = p.target > 0 ? (p.estimate / p.target * 100) : 0;
+    const estBadge = estPct >= 100 ? 'badge-green' : (estPct >= 60 ? 'badge-yellow' : 'badge-red');
     return `<div class="progress-item">
       <div class="pi-header">
         <span class="pi-name">${p.name}</span>
@@ -550,8 +550,6 @@ function buildProgress() {
           <span>目标 ¥${p.target.toLocaleString()}</span>
           <span style="font-weight:600;color:#be185d;">实际 ¥${p.actual.toLocaleString()}</span>
           <span style="color:${gapColor};font-weight:600;">${gapText}</span>
-          <span>25年同期 ¥${p.ly_actual.toLocaleString()}</span>
-          <span style="color:${yoyColor};font-weight:600;">同比 ${yoyText}</span>
         </div>
       </div>
       <div class="progress-bar-bg">
@@ -559,8 +557,8 @@ function buildProgress() {
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:#64748b;">
         <span>进度 ${pct.toFixed(1)}%</span>
-        <span>预估全月 ¥${p.estimate.toLocaleString()}</span>
-        <span>销量: ${p.qty_actual}/${p.qty_target}件</span>
+        <span>预估全月 ¥${p.estimate.toLocaleString()} <span class="badge ${estBadge}" style="margin-left:4px;">${estPct.toFixed(0)}%</span></span>
+        <span>销量: ${p.qty_actual}/${p.qty_target}件 (${(p.qty_progress*100).toFixed(1)}%)</span>
       </div>
     </div>`;
   }).join('');
