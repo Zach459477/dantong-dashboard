@@ -213,7 +213,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="combined_data.js?v=10"></script>
+<script src="combined_data.js?v=11"></script>
 <script>
 let D = window.COMBINED_DATA;
 let filteredDaily = [];
@@ -254,12 +254,10 @@ function applyFilter() {
   const startDate = document.getElementById('startDate').value;
   const endDate = document.getElementById('endDate').value;
   const pid = document.getElementById('productFilter').value;
-  let currentMonth = null;
 
   let filtered = D.daily_comparison;
   if (startDate && endDate) {
     filtered = filtered.filter(d => d.date >= startDate && d.date <= endDate);
-    if (startDate.slice(0,7) === endDate.slice(0,7)) currentMonth = startDate.slice(0,7);
   }
   filteredDaily = filtered;
 
@@ -268,7 +266,7 @@ function applyFilter() {
   buildTrendCharts(filtered);
   buildMonthlyCharts(filtered);
   buildProgressCompare();
-  buildProductTable(currentMonth, pid);
+  buildProductTable(null, pid);
 }
 
 function buildKPIs(data) {
@@ -692,44 +690,115 @@ function buildProgressCompare() {
 }
 
 function buildProductTable(currentMonth, pid) {
-  let ranking, isMonthly = false;
-  if (currentMonth && D.monthly_products && D.monthly_products[currentMonth]) {
-    isMonthly = true;
-    ranking = D.monthly_products[currentMonth];
-  } else {
-    ranking = D.top_products;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  pid = pid || document.getElementById('productFilter').value;
+
+  // 根据筛选日期决定 ranking 来源：同月/完整跨月用 monthly_products，否则 fallback 到累计 top_products
+  let ranking = [], mode = 'cumulative'; // 'monthly' | 'aggregate' | 'cumulative'
+  const startMonth = startDate ? startDate.slice(0,7) : null;
+  const endMonth = endDate ? endDate.slice(0,7) : null;
+
+  function lastDayOfMonth(ym) {
+    const [y,m] = ym.split('-').map(Number);
+    return new Date(y, m, 0).toISOString().slice(0,10);
   }
+  function monthList(from, to) {
+    const list = [];
+    let [y,m] = from.split('-').map(Number);
+    const [ty,tm] = to.split('-').map(Number);
+    while (y < ty || (y === ty && m <= tm)) {
+      list.push(`${y}-${String(m).padStart(2,'0')}`);
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+    return list;
+  }
+
+  if (startMonth && endMonth && D.monthly_products) {
+    if (startMonth === endMonth && D.monthly_products[startMonth]) {
+      // 同月筛选：直接取该月商品排行，占比已在后端按该月计算
+      ranking = D.monthly_products[startMonth].map(p => ({...p}));
+      mode = 'monthly';
+    } else if (startDate === `${startMonth}-01` && endDate === lastDayOfMonth(endMonth)) {
+      // 完整跨月筛选：聚合各月 monthly_products
+      const months = monthList(startMonth, endMonth);
+      const agg = {};
+      months.forEach(m => {
+        (D.monthly_products[m] || []).forEach(p => {
+          const key = `${p.channel}|${p.pid}`;
+          if (!agg[key]) {
+            agg[key] = {...p, gmv:0, gmv_post:0, qty:0, uv:0, buyers:0, active_days:0, _count:0};
+          }
+          const a = agg[key];
+          a.gmv += (p.gmv || 0);
+          a.gmv_post += (p.gmv_post || 0);
+          a.qty += (p.qty || 0);
+          a.uv += (p.uv || 0);
+          a.buyers += (p.buyers || 0);
+          a.active_days += (p.active_days || 0);
+          a._count++;
+        });
+      });
+      ranking = Object.values(agg);
+      // 重新计算占比：分母为当前聚合范围内各渠道/全渠道总GMV
+      const tmallTotal = ranking.filter(p => p.channel === 'tmall').reduce((s,p)=>s+p.gmv,0);
+      const vipTotal = ranking.filter(p => p.channel === 'vipshop').reduce((s,p)=>s+p.gmv,0);
+      const grandTotal = tmallTotal + vipTotal;
+      ranking.forEach(p => {
+        const chTotal = p.channel === 'tmall' ? tmallTotal : vipTotal;
+        p.channel_share = grandTotal > 0 ? p.gmv / chTotal : 0;
+        p.total_share = grandTotal > 0 ? p.gmv / grandTotal : 0;
+        p.cvr = p.uv > 0 ? p.buyers / p.uv : 0;
+      });
+      mode = 'aggregate';
+    }
+  }
+
+  if (mode === 'cumulative') {
+    ranking = D.top_products.map(p => ({...p}));
+  }
+
+  ranking.sort((a,b) => b.gmv - a.gmv);
 
   if (pid && pid !== 'all') {
     ranking = ranking.filter(p => p.pid === pid);
   }
 
+  const modeLabel = mode === 'monthly' ? '（当月）' : (mode === 'aggregate' ? '（筛选月份合计）' : '（累计）');
+
   document.getElementById('productTable').innerHTML = ranking.map((p,i) => {
     const chBadge = p.channel === 'tmall' ? 'ch-tmall' : 'ch-vip';
     const chLabel = p.channel === 'tmall' ? '猫超' : '唯品';
-    const cvrPct = (p.cvr*100).toFixed(2);
+    const cvrPct = ((p.cvr||0)*100).toFixed(2);
     const cvrBadge = p.cvr>0.12?'badge-green':(p.cvr>0.06?'badge-yellow':'badge-red');
     const chShare = ((p.channel_share||0)*100).toFixed(2);
     const totalShare = ((p.total_share||0)*100).toFixed(2);
     const shareBadge = s => s>20?'badge-green':(s>5?'badge-yellow':'badge-red');
-    const gmv = isMonthly ? p.gmv : p.gmv;
-    const gmvPost = isMonthly ? (p.gmv_post||0) : (p.gmv_post||0);
+    const gmvPost = p.gmv_post || 0;
     return `<tr>
       <td style="font-weight:700;">#${i+1}</td>
       <td><span class="badge ${chBadge}">${chLabel}</span></td>
       <td style="font-family:monospace;font-size:11px;">${(p.pid||'').substring(0,16)}</td>
       <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
-      <td style="font-weight:700;">¥${gmv.toLocaleString()}</td>
+      <td style="font-weight:700;">¥${(p.gmv||0).toLocaleString()}</td>
       <td>¥${gmvPost.toLocaleString()}</td>
       <td><span class="badge ${shareBadge(chShare)}">${chShare}%</span></td>
       <td><span class="badge ${shareBadge(totalShare)}">${totalShare}%</span></td>
-      <td>${p.qty.toLocaleString()}</td>
-      <td>${p.uv.toLocaleString()}</td>
-      <td>${p.buyers.toLocaleString()}</td>
+      <td>${(p.qty||0).toLocaleString()}</td>
+      <td>${(p.uv||0).toLocaleString()}</td>
+      <td>${(p.buyers||0).toLocaleString()}</td>
       <td><span class="badge ${cvrBadge}">${cvrPct}%</span></td>
       <td>${p.active_days}天</td>
     </tr>`;
-  }).join('');
+  }).join('') || `<tr><td colspan="13" style="text-align:center;color:#94a3b8;padding:32px;">暂无数据</td></tr>`;
+
+  // 更新表头小标签提示当前是累计/当月/聚合
+  const th = document.querySelector('#rankingSection h3');
+  if (th) {
+    const base = th.textContent.replace(/（.*）/,'');
+    th.textContent = base + modeLabel;
+  }
 }
 
 // Nav
