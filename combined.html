@@ -61,11 +61,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 .kpi-card .sub { font-size:12px; color:var(--c-text-light); margin-top:4px; line-height:1.6; }
 .kpi-card .channel-row { display:flex; gap:12px; margin-top:8px; }
 .kpi-card .channel-tag { font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; }
+.filter-bar { background:var(--c-card); border-radius:10px; padding:14px 20px; margin-bottom:20px; box-shadow:0 1px 3px var(--c-shadow); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.filter-bar label { font-size:13px; color:var(--c-text-muted); font-weight:500; }
+.filter-bar select, .filter-bar input[type="date"] { border:1px solid var(--c-border); border-radius:8px; padding:7px 12px; font-size:13px; outline:none; font-family:inherit; transition:border-color .2s; }
+.filter-bar select:focus, .filter-bar input[type="date"]:focus { border-color:var(--c-primary); box-shadow:0 0 0 3px var(--c-primary-tint); }
+.date-range-group { display:flex; align-items:center; gap:8px; }
+.date-range-group .date-sep { color:var(--c-text-light); font-size:12px; }
 .charts-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(460px,1fr)); gap:20px; margin-bottom:20px; }
 .chart-card { background:var(--c-card); border-radius:10px; padding:20px; box-shadow:0 1px 3px var(--c-shadow); }
 .chart-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; color:#334155; }
 .chart-card.full-width { grid-column:1 / -1; }
-.chart-card canvas { width:100% !important; }
+.chart-card canvas { max-width:100%; height:auto; display:block; margin:0 auto; }
+.donut-wrap { display:flex; justify-content:center; align-items:center; min-height:280px; }
 .table-card { background:var(--c-card); border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 1px 3px var(--c-shadow); overflow-x:auto; }
 .table-card h3 { font-size:15px; font-weight:600; margin-bottom:16px; color:#334155; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -115,13 +122,27 @@ tr:hover td { background:var(--c-primary-tint); }
 
 <div id="section-overview" class="section-anchor">
   <div class="kpi-grid" id="kpiCards"></div>
+  <div class="filter-bar">
+    <label>时间范围</label>
+    <div class="date-range-group">
+      <input type="date" id="startDate" onchange="applyFilter()">
+      <span class="date-sep">至</span>
+      <input type="date" id="endDate" onchange="applyFilter()">
+    </div>
+    <label style="margin-left:16px;">商品</label>
+    <select id="productFilter" onchange="applyFilter()">
+      <option value="all">全部商品</option>
+    </select>
+  </div>
 </div>
 
 <div id="section-compare" class="section-anchor">
   <div class="charts-grid">
     <div class="chart-card">
       <h3>🥧 渠道GMV占比</h3>
-      <canvas id="splitChart"></canvas>
+      <div class="donut-wrap">
+        <canvas id="splitChart"></canvas>
+      </div>
     </div>
     <div class="chart-card">
       <h3>📊 渠道日均GMV对比</h3>
@@ -181,7 +202,7 @@ tr:hover td { background:var(--c-primary-tint); }
   <div class="table-card">
     <h3>🏆 跨渠道商品GMV排行 TOP30</h3>
     <table><thead>
-      <tr><th>排名</th><th>渠道</th><th>商品ID</th><th>商品名称</th><th>累计GMV</th><th>退后GMV</th><th>销售件数</th><th>UV</th><th>买家数</th><th>CVR</th><th>活跃天数</th></tr>
+      <tr><th>排名</th><th>渠道</th><th>商品ID</th><th>商品名称</th><th>累计GMV</th><th>退后GMV</th><th>渠道内占比</th><th>全渠道占比</th><th>销售件数</th><th>UV</th><th>买家数</th><th>CVR</th><th>活跃天数</th></tr>
     </thead><tbody id="productTable"></tbody></table>
   </div>
 </div>
@@ -192,9 +213,10 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="combined_data.js?v=7"></script>
+<script src="combined_data.js?v=8"></script>
 <script>
 let D = window.COMBINED_DATA;
+let filteredDaily = [];
 if (!D) {
   document.getElementById('headerInfo').textContent = '数据加载失败';
 } else {
@@ -207,53 +229,107 @@ function initDashboard() {
     `猫超 ${D.channels.tmall.data_range||''} · 唯品 ${D.channels.vipshop.data_range||''} · 合计 ¥${(s.total_gmv/10000).toFixed(0)}万`;
   document.getElementById('updateTime').textContent = `更新: ${D.generated_at}`;
   document.getElementById('genTime').textContent = D.generated_at;
-  buildKPIs();
-  buildCompareCharts();
-  buildTrendCharts();
-  buildMonthlyCharts();
-  buildProgressCompare();
-  buildProductTable();
+
+  // 商品筛选下拉
+  const pf = document.getElementById('productFilter');
+  D.top_products.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.pid;
+    opt.textContent = (p.pid||'').substring(0,12) + ' - ' + (p.name||'').substring(0, 28);
+    pf.appendChild(opt);
+  });
+
+  // 默认时间范围：最近90天
+  const allDates = D.daily_comparison.map(x => x.date).sort();
+  if (allDates.length > 0) {
+    const cutoffIdx = Math.max(0, allDates.length - 90);
+    document.getElementById('startDate').value = allDates[cutoffIdx];
+    document.getElementById('endDate').value = allDates[allDates.length - 1];
+  }
+
+  applyFilter();
 }
 
-function buildKPIs() {
-  const s = D.combined_summary;
-  const t = D.channels.tmall, v = D.channels.vipshop;
-  const tmallShare = (s.tmall_share * 100).toFixed(1);
-  const vipShare = (s.vipshop_share * 100).toFixed(1);
+function applyFilter() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  const pid = document.getElementById('productFilter').value;
+  let currentMonth = null;
+
+  let filtered = D.daily_comparison;
+  if (startDate && endDate) {
+    filtered = filtered.filter(d => d.date >= startDate && d.date <= endDate);
+    if (startDate.slice(0,7) === endDate.slice(0,7)) currentMonth = startDate.slice(0,7);
+  }
+  filteredDaily = filtered;
+
+  buildKPIs(filtered);
+  buildCompareCharts(filtered);
+  buildTrendCharts(filtered);
+  buildMonthlyCharts(filtered);
+  buildProgressCompare();
+  buildProductTable(currentMonth, pid);
+}
+
+function buildKPIs(data) {
+  const days = data.length;
+  const tGmv = data.reduce((s,d)=>s+d.tmall_gmv,0);
+  const vGmv = data.reduce((s,d)=>s+d.vipshop_gmv,0);
+  const totalGmv = tGmv + vGmv;
+  const tPost = data.reduce((s,d)=>s+d.tmall_post,0);
+  const vPost = data.reduce((s,d)=>s+d.vipshop_post,0);
+  const totalPost = tPost + vPost;
+  const tOrders = data.reduce((s,d)=>s+d.tmall_orders,0);
+  const vOrders = data.reduce((s,d)=>s+d.vipshop_orders,0);
+  const totalOrders = tOrders + vOrders;
+  const tUV = data.reduce((s,d)=>s+d.tmall_uv,0);
+  const vUV = data.reduce((s,d)=>s+d.vipshop_uv,0);
+  const totalUV = tUV + vUV;
+  const tBuyers = data.reduce((s,d)=>s+d.tmall_buyers,0);
+  const vBuyers = data.reduce((s,d)=>s+d.vipshop_buyers,0);
+  const totalBuyers = tBuyers + vBuyers;
+
+  const tmallShare = totalGmv > 0 ? (tGmv/totalGmv*100).toFixed(1) : '0.0';
+  const vipShare = totalGmv > 0 ? (vGmv/totalGmv*100).toFixed(1) : '0.0';
+
+  const s = document.getElementById('startDate').value;
+  const e = document.getElementById('endDate').value;
+  const rangeLabel = s && e ? `${s.replace(/-/g,'/')} ~ ${e.replace(/-/g,'/')}` : '全部';
 
   document.getElementById('kpiCards').innerHTML = `
     <div class="kpi-card">
       <div class="label">合计GMV (退前)</div>
-      <div class="value">¥${(s.total_gmv/10000).toFixed(1)}万</div>
+      <div class="value">¥${(totalGmv/10000).toFixed(1)}万</div>
       <div class="channel-row">
         <span class="channel-tag ch-tmall">猫超 ${tmallShare}%</span>
         <span class="channel-tag ch-vip">唯品 ${vipShare}%</span>
       </div>
+      <div class="sub">${rangeLabel} · 日均 ¥${days>0?(totalGmv/days).toLocaleString('zh-CN',{maximumFractionDigits:0}):0}</div>
     </div>
     <div class="kpi-card" style="border-left-color:#ef4444;">
       <div class="label">合计GMV (退后)</div>
-      <div class="value">¥${(s.total_gmv_post/10000).toFixed(1)}万</div>
-      <div class="sub">退款率 ${s.total_gmv>0?((1-s.total_gmv_post/s.total_gmv)*100).toFixed(1):'0'}%</div>
+      <div class="value">¥${(totalPost/10000).toFixed(1)}万</div>
+      <div class="sub">退款率 ${totalGmv>0?((1-totalPost/totalGmv)*100).toFixed(1):'0'}%</div>
     </div>
     <div class="kpi-card">
       <div class="label">合计订单</div>
-      <div class="value">${s.total_orders.toLocaleString()}</div>
-      <div class="sub">猫超 ${t.total_orders.toLocaleString()} · 唯品 ${v.total_orders.toLocaleString()}</div>
+      <div class="value">${totalOrders.toLocaleString()}</div>
+      <div class="sub">猫超 ${tOrders.toLocaleString()} · 唯品 ${vOrders.toLocaleString()}</div>
     </div>
     <div class="kpi-card">
       <div class="label">猫超GMV</div>
-      <div class="value">¥${(t.total_gmv/10000).toFixed(1)}万</div>
-      <div class="sub">${t.days}天 · 日均 ¥${(t.total_gmv/t.days).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+      <div class="value">¥${(tGmv/10000).toFixed(1)}万</div>
+      <div class="sub">${days}天 · 日均 ¥${days>0?(tGmv/days).toLocaleString('zh-CN',{maximumFractionDigits:0}):0}</div>
     </div>
     <div class="kpi-card" style="border-left-color:#be185d;">
       <div class="label">唯品GMV</div>
-      <div class="value">¥${(v.total_gmv/10000).toFixed(1)}万</div>
-      <div class="sub">${v.days}天 · 日均 ¥${(v.total_gmv/v.days).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+      <div class="value">¥${(vGmv/10000).toFixed(1)}万</div>
+      <div class="sub">${days}天 · 日均 ¥${days>0?(vGmv/days).toLocaleString('zh-CN',{maximumFractionDigits:0}):0}</div>
     </div>
     <div class="kpi-card">
       <div class="label">合计UV · 买家</div>
-      <div class="value">${(t.total_uv+v.total_uv).toLocaleString()} <span style="font-size:14px;color:#94a3b8;">/ ${(t.total_buyers+v.total_buyers).toLocaleString()}</span></div>
-      <div class="sub">合计CVR ${((t.total_buyers+v.total_buyers)/(t.total_uv+v.total_uv)*100).toFixed(2)}%</div>
+      <div class="value">${totalUV.toLocaleString()} <span style="font-size:14px;color:#94a3b8;">/ ${totalBuyers.toLocaleString()}</span></div>
+      <div class="sub">合计CVR ${totalUV>0?(totalBuyers/totalUV*100).toFixed(2):'0.00'}%</div>
     </div>
   `;
 }
@@ -380,9 +456,23 @@ function drawStackedBar(canvas, data, yFmt) {
 }
 
 function drawDonut(canvas, data) {
-  const {ctx, W, H} = setupCanvas(canvas, 280, 280);
-  const cx = W/2, cy = H/2, r = 90, ir = 55;
+  // 使用父容器宽度，保持正方形，避免拉伸变形
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const size = Math.min(rect.width || 320, 320);
+  const W = size, H = size;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  const r = Math.max(60, W*0.28), ir = Math.max(36, W*0.17);
   const total = data.reduce((s,d) => s+d.value, 0);
+  if (total <= 0) {
+    ctx.fillStyle='#94a3b8'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('无数据', cx, cy); return;
+  }
   let angle = -Math.PI/2;
   data.forEach(d => {
     const slice = (d.value/total) * Math.PI*2;
@@ -394,8 +484,8 @@ function drawDonut(canvas, data) {
     ctx.fill();
     // Label
     const midAngle = angle + slice/2;
-    const lx = cx + Math.cos(midAngle) * (r+20);
-    const ly = cy + Math.sin(midAngle) * (r+20);
+    const lx = cx + Math.cos(midAngle) * (r+22);
+    const ly = cy + Math.sin(midAngle) * (r+22);
     ctx.fillStyle = d.color;
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
@@ -425,25 +515,31 @@ function roundRect(ctx,x,y,w,h,r) {
   ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
 }
 
-function buildCompareCharts() {
-  const s = D.combined_summary;
+function buildCompareCharts(data) {
+  const tGmv = data.reduce((s,d)=>s+d.tmall_gmv,0);
+  const vGmv = data.reduce((s,d)=>s+d.vipshop_gmv,0);
+  const totalGmv = tGmv + vGmv;
   // Donut
   drawDonut(document.getElementById('splitChart'), [
-    {label:'猫超', value:s.total_gmv*s.tmall_share, color:'#0d9488'},
-    {label:'唯品', value:s.total_gmv*s.vipshop_share, color:'#be185d'},
+    {label:'猫超', value:tGmv, color:'#0d9488'},
+    {label:'唯品', value:vGmv, color:'#be185d'},
   ]);
   // Channel daily avg
-  const t = D.channels.tmall, v = D.channels.vipshop;
+  const days = data.length || 1;
+  const tOrders = data.reduce((s,d)=>s+d.tmall_orders,0);
+  const vOrders = data.reduce((s,d)=>s+d.vipshop_orders,0);
+  const tUV = data.reduce((s,d)=>s+d.tmall_uv,0);
+  const vUV = data.reduce((s,d)=>s+d.vipshop_uv,0);
   drawGroupedBar(document.getElementById('channelDailyChart'),
     ['日均GMV','日均订单','日均UV'],
     [
-      {label:'猫超', values:[t.total_gmv/t.days, t.total_orders/t.days, t.total_uv/t.days], color:'#0d9488'},
-      {label:'唯品', values:[v.total_gmv/v.days, v.total_orders/v.days, v.total_uv/v.days], color:'#be185d'},
+      {label:'猫超', values:[tGmv/days, tOrders/days, tUV/days], color:'#0d9488'},
+      {label:'唯品', values:[vGmv/days, vOrders/days, vUV/days], color:'#be185d'},
     ],
     val => val>10000 ? '¥'+(val/10000).toFixed(1)+'万' : val.toFixed(0)
   );
-  // Compare trend (both channel dates)
-  const both = D.both_channel_daily;
+  // Compare trend (both channel dates in filtered range)
+  const both = data.filter(d => d.tmall_gmv > 0 && d.vipshop_gmv > 0);
   drawLineChart(document.getElementById('compareTrendChart'), both,
     [{values:both.map(d=>d.tmall_gmv), color:'#0d9488', label:'猫超GMV'},
      {values:both.map(d=>d.vipshop_gmv), color:'#be185d', label:'唯品GMV'}],
@@ -451,26 +547,48 @@ function buildCompareCharts() {
   );
 }
 
-function buildTrendCharts() {
-  const daily = D.daily_comparison;
+function buildTrendCharts(data) {
   // Stacked GMV
-  drawStackedBar(document.getElementById('stackedGmvChart'), daily,
+  drawStackedBar(document.getElementById('stackedGmvChart'), data,
     v=>'¥'+(v/10000).toFixed(1)+'万');
   // Combined UV
-  drawLineChart(document.getElementById('combinedUvChart'), daily,
-    [{values:daily.map(d=>d.tmall_uv), color:'#0d9488', label:'猫超UV'},
-     {values:daily.map(d=>d.vipshop_uv), color:'#be185d', label:'唯品UV'}],
+  drawLineChart(document.getElementById('combinedUvChart'), data,
+    [{values:data.map(d=>d.tmall_uv), color:'#0d9488', label:'猫超UV'},
+     {values:data.map(d=>d.vipshop_uv), color:'#be185d', label:'唯品UV'}],
     v=>v.toLocaleString()
   );
   // Combined orders
-  drawLineChart(document.getElementById('combinedOrderChart'), daily,
-    [{values:daily.map(d=>d.total_orders), color:'#4f46e5', fill:'rgba(79,70,229,0.06)', label:'合计订单'}],
+  drawLineChart(document.getElementById('combinedOrderChart'), data,
+    [{values:data.map(d=>d.total_orders), color:'#4f46e5', fill:'rgba(79,70,229,0.06)', label:'合计订单'}],
     v=>v.toLocaleString()
   );
 }
 
-function buildMonthlyCharts() {
-  const monthly = D.monthly_comparison;
+function buildMonthlyCharts(data) {
+  // 从当前筛选范围重算月度汇总
+  const monthlyAgg = {};
+  data.forEach(d => {
+    const m = d.date.slice(0,7);
+    if (!monthlyAgg[m]) monthlyAgg[m] = {tmall_gmv:0, vipshop_gmv:0, tmall_orders:0, vipshop_orders:0};
+    monthlyAgg[m].tmall_gmv += d.tmall_gmv;
+    monthlyAgg[m].vipshop_gmv += d.vipshop_gmv;
+    monthlyAgg[m].tmall_orders += d.tmall_orders;
+    monthlyAgg[m].vipshop_orders += d.vipshop_orders;
+  });
+  const months = Object.keys(monthlyAgg).sort();
+  const monthly = months.map(m => {
+    const a = monthlyAgg[m];
+    const total = a.tmall_gmv + a.vipshop_gmv;
+    const monthNum = parseInt(m.slice(5), 10);
+    return {
+      month_name: `${monthNum}月`,
+      tmall_gmv: a.tmall_gmv, vipshop_gmv: a.vipshop_gmv,
+      total_gmv: total, total_orders: a.tmall_orders + a.vipshop_orders,
+      tmall_share: total > 0 ? a.tmall_gmv / total : 0,
+      vipshop_share: total > 0 ? a.vipshop_gmv / total : 0,
+    };
+  });
+
   const mNames = monthly.map(m=>m.month_name);
   drawGroupedBar(document.getElementById('monthlyChart'), mNames,
     [{label:'猫超', values:monthly.map(m=>m.tmall_gmv), color:'#0d9488'},
@@ -540,20 +658,38 @@ function buildProgressCompare() {
   document.getElementById('progressCompare').innerHTML = html;
 }
 
-function buildProductTable() {
-  const products = D.top_products;
-  document.getElementById('productTable').innerHTML = products.map((p,i) => {
+function buildProductTable(currentMonth, pid) {
+  let ranking, isMonthly = false;
+  if (currentMonth && D.monthly_products && D.monthly_products[currentMonth]) {
+    isMonthly = true;
+    ranking = D.monthly_products[currentMonth];
+  } else {
+    ranking = D.top_products;
+  }
+
+  if (pid && pid !== 'all') {
+    ranking = ranking.filter(p => p.pid === pid);
+  }
+
+  document.getElementById('productTable').innerHTML = ranking.map((p,i) => {
     const chBadge = p.channel === 'tmall' ? 'ch-tmall' : 'ch-vip';
     const chLabel = p.channel === 'tmall' ? '猫超' : '唯品';
     const cvrPct = (p.cvr*100).toFixed(2);
     const cvrBadge = p.cvr>0.12?'badge-green':(p.cvr>0.06?'badge-yellow':'badge-red');
+    const chShare = ((p.channel_share||0)*100).toFixed(2);
+    const totalShare = ((p.total_share||0)*100).toFixed(2);
+    const shareBadge = s => s>20?'badge-green':(s>5?'badge-yellow':'badge-red');
+    const gmv = isMonthly ? p.gmv : p.gmv;
+    const gmvPost = isMonthly ? (p.gmv_post||0) : (p.gmv_post||0);
     return `<tr>
       <td style="font-weight:700;">#${i+1}</td>
       <td><span class="badge ${chBadge}">${chLabel}</span></td>
       <td style="font-family:monospace;font-size:11px;">${(p.pid||'').substring(0,16)}</td>
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
-      <td style="font-weight:700;">¥${p.gmv.toLocaleString()}</td>
-      <td>¥${(p.gmv_post||0).toLocaleString()}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
+      <td style="font-weight:700;">¥${gmv.toLocaleString()}</td>
+      <td>¥${gmvPost.toLocaleString()}</td>
+      <td><span class="badge ${shareBadge(chShare)}">${chShare}%</span></td>
+      <td><span class="badge ${shareBadge(totalShare)}">${totalShare}%</span></td>
       <td>${p.qty.toLocaleString()}</td>
       <td>${p.uv.toLocaleString()}</td>
       <td>${p.buyers.toLocaleString()}</td>
