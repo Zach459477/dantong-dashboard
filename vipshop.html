@@ -189,6 +189,10 @@ tr:hover td { background:var(--c-primary-tint); }
 
 <div id="section-progress" class="section-anchor">
   <div class="chart-card full-width" style="margin-bottom:20px;">
+    <h3>🎯 8月进度简报</h3>
+    <div id="progressSummary"></div>
+  </div>
+  <div class="chart-card full-width" style="margin-bottom:20px;">
     <h3>🎯 8月单品进度追踪</h3>
     <div class="progress-list" id="progressList"></div>
   </div>
@@ -209,7 +213,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=9"></script>
+<script src="vipshop_data.js?v=10"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -280,6 +284,7 @@ function applyFilter() {
   buildKPIs(filtered);
   buildCharts(filtered);
   buildYoY();
+  buildProgressSummary();
   buildProgress();
   buildProductTable(currentMonth);
 }
@@ -329,6 +334,13 @@ function buildKPIs(data) {
       <div class="label">${prog.current_month||''}目标进度</div>
       <div class="value">${completionPct.toFixed(1)}%</div>
       <div class="sub">¥${(prog.mtd_pre/10000).toFixed(1)}万 / ¥${(prog.target_pre/10000).toFixed(0)}万 · 时间进度${(prog.time_progress*100).toFixed(1)}%</div>
+      ${prog.ly_mtd_pre>0?`<div class="sub" style="color:#64748b;">去年同期 ¥${(prog.ly_mtd_pre/10000).toFixed(1)}万 · 同比${prog.mtd_pre/prog.ly_mtd_pre>=1?'↑':'↓'}${Math.abs((prog.mtd_pre/prog.ly_mtd_pre-1)*100).toFixed(1)}%</div>`:''}
+    </div>
+    <div class="kpi-card ${prog.day_completion<0.6?'alert':(prog.day_completion<0.8?'warn':'')}">
+      <div class="label">日目标达成</div>
+      <div class="value">${(prog.day_completion*100).toFixed(1)}%</div>
+      <div class="sub">¥${(prog.day_ach_pre||0).toLocaleString('zh-CN',{maximumFractionDigits:0})} / ¥${(prog.day_target_pre||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>
+      ${prog.ly_day_ach_pre>0?`<div class="sub" style="color:#64748b;">去年同日 ¥${prog.ly_day_ach_pre.toLocaleString('zh-CN',{maximumFractionDigits:0})}</div>`:''}
     </div>
     ${last ? `
     <div class="kpi-card">
@@ -531,6 +543,87 @@ function buildYoY() {
       <td><span class="badge ${completeBadge}">${completePct.toFixed(1)}%</span></td>
     </tr>`;
   }).join('');
+}
+
+function buildProgressSummary() {
+  const p = FULL_DATA.progress;
+  if (!p) return;
+  const el = document.getElementById('progressSummary');
+  if (!el) return;
+
+  const hasLY = p.ly_mtd_pre > 0;
+  const yoyPct = hasLY ? ((p.mtd_pre / p.ly_mtd_pre - 1) * 100) : 0;
+  const yoyColor = hasLY ? (yoyPct >= 0 ? '#16a34a' : '#dc2626') : '#64748b';
+  const yoyBadge = hasLY ? (yoyPct >= 0 ? 'badge-green' : 'badge-red') : 'badge-yellow';
+
+  const preColor = p.completion_pre >= 0.9 ? '#22c55e' : (p.completion_pre >= 0.6 ? '#f59e0b' : '#ef4444');
+  const postColor = p.completion_post >= 0.9 ? '#22c55e' : (p.completion_post >= 0.6 ? '#f59e0b' : '#ef4444');
+  const dayColor = p.day_completion >= 0.9 ? '#22c55e' : (p.day_completion >= 0.6 ? '#f59e0b' : '#ef4444');
+
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">';
+
+  // 26年进度
+  html += `<div style="border:2px solid #be185d;border-radius:10px;padding:20px;background:#fdf2f8;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-weight:700;font-size:16px;color:#be185d;">26年 ${p.current_month||''}进度</span>
+      <span style="font-size:12px;color:#64748b;">时间进度 ${(p.time_progress*100).toFixed(1)}%</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">退前达成</div>
+        <div style="font-size:20px;font-weight:700;color:${preColor};">${(p.completion_pre*100).toFixed(1)}%</div>
+        <div style="font-size:12px;color:#64748b;">¥${(p.mtd_pre/10000).toFixed(1)}万 / ¥${(p.target_pre/10000).toFixed(0)}万</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">退后达成</div>
+        <div style="font-size:20px;font-weight:700;color:${postColor};">${(p.completion_post*100).toFixed(1)}%</div>
+        <div style="font-size:12px;color:#64748b;">¥${(p.mtd_post/10000).toFixed(1)}万 / ¥${(p.target_post/10000).toFixed(0)}万</div>
+      </div>
+    </div>
+    <div style="height:12px;background:#f1f5f9;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+      <div style="height:100%;width:${Math.min(p.completion_pre*100,100)}%;background:${preColor};border-radius:6px;transition:width .6s;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;">
+      <span>日目标 ¥${(p.day_target_pre||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+      <span>日达成 ¥${(p.day_ach_pre||0).toLocaleString('zh-CN',{maximumFractionDigits:0})} (${(p.day_completion*100).toFixed(1)}%)</span>
+    </div>
+  </div>`;
+
+  // 25年同期
+  if (hasLY) {
+    const lyPreColor = (p.ly_mtd_pre / p.ly_target_pre) >= 0.9 ? '#22c55e' : ((p.ly_mtd_pre / p.ly_target_pre) >= 0.6 ? '#f59e0b' : '#ef4444');
+    const lyCompletion = p.ly_target_pre > 0 ? (p.ly_mtd_pre / p.ly_target_pre) : 0;
+    html += `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:20px;background:#f8fafc;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-weight:700;font-size:16px;color:#64748b;">25年同期 ${p.current_month||''}</span>
+        <span class="badge ${yoyBadge}">同比 ${yoyPct>=0?'+':''}${yoyPct.toFixed(1)}%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:4px;">退前达成</div>
+          <div style="font-size:20px;font-weight:700;color:${lyPreColor};">${(lyCompletion*100).toFixed(1)}%</div>
+          <div style="font-size:12px;color:#64748b;">¥${(p.ly_mtd_pre/10000).toFixed(1)}万 / ¥${(p.ly_target_pre/10000).toFixed(0)}万</div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:4px;">退后达成</div>
+          <div style="font-size:20px;font-weight:700;color:#64748b;">${p.ly_target_post>0?(p.ly_mtd_post/p.ly_target_post*100).toFixed(1):'0'}%</div>
+          <div style="font-size:12px;color:#64748b;">¥${(p.ly_mtd_post/10000).toFixed(1)}万 / ¥${(p.ly_target_post/10000).toFixed(0)}万</div>
+        </div>
+      </div>
+      <div style="height:12px;background:#f1f5f9;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+        <div style="height:100%;width:${Math.min(lyCompletion*100,100)}%;background:#94a3b8;border-radius:6px;transition:width .6s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;">
+        <span>去年同日 ¥${(p.ly_day_ach_pre||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+        <span>去年日目标 ¥${(p.ly_day_target_pre||0).toLocaleString('zh-CN',{maximumFractionDigits:0})}</span>
+      </div>
+    </div>`;
+  } else {
+    html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:20px;background:#f8fafc;display:flex;align-items:center;justify-content:center;color:#94a3b8;">暂无25年同期数据</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function buildProgress() {
