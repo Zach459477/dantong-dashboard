@@ -213,7 +213,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="combined_data.js?v=8"></script>
+<script src="combined_data.js?v=9"></script>
 <script>
 let D = window.COMBINED_DATA;
 let filteredDaily = [];
@@ -310,6 +310,11 @@ function buildKPIs(data) {
       <div class="label">合计GMV (退后)</div>
       <div class="value">¥${(totalPost/10000).toFixed(1)}万</div>
       <div class="sub">退款率 ${totalGmv>0?((1-totalPost/totalGmv)*100).toFixed(1):'0'}%</div>
+    </div>
+    <div class="kpi-card" style="border-left-color:#f59e0b;">
+      <div class="label">合计目标 ${D.combined_progress.current_month||''}</div>
+      <div class="value">${(D.combined_progress.completion_post*100).toFixed(1)}%</div>
+      <div class="sub">退后 ¥${(D.combined_progress.mtd_post/10000).toFixed(1)}万 / ¥${(D.combined_progress.target_post/10000).toFixed(0)}万 · 退前 ${(D.combined_progress.completion_pre*100).toFixed(1)}%</div>
     </div>
     <div class="kpi-card">
       <div class="label">合计订单</div>
@@ -615,11 +620,39 @@ function buildMonthlyCharts(data) {
 
 function buildProgressCompare() {
   const t = D.channels.tmall.progress, v = D.channels.vipshop.progress;
+  const cp = D.combined_progress;
   const channels = [
     {name:'天猫超市', color:'#0d9488', p:t},
     {name:'唯品会', color:'#be185d', p:v},
   ];
+
+  // 合计目标进度卡片
+  const prePctC = (cp.completion_pre*100).toFixed(1);
+  const postPctC = (cp.completion_post*100).toFixed(1);
+  const timePctC = (cp.time_progress*100).toFixed(1);
+  const preColorC = cp.completion_pre>=0.9?'#22c55e':(cp.completion_pre>=0.6?'#f59e0b':'#ef4444');
   let html = '<div style="display:grid;gap:24px;">';
+  html += `<div style="border:2px solid #4f46e5;border-radius:10px;padding:20px;background:#eef2ff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-weight:700;font-size:17px;color:#4f46e5;">两渠道合计 ${cp.current_month||''}</span>
+      <span style="font-size:12px;color:#64748b;">时间进度 ${timePctC}%</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">退前达成</div>
+        <div style="font-size:22px;font-weight:700;">${prePctC}%</div>
+        <div style="font-size:12px;color:#64748b;">¥${(cp.mtd_pre/10000).toFixed(1)}万 / ¥${(cp.target_pre/10000).toFixed(0)}万</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">退后达成</div>
+        <div style="font-size:22px;font-weight:700;">${postPctC}%</div>
+        <div style="font-size:12px;color:#64748b;">¥${(cp.mtd_post/10000).toFixed(1)}万 / ¥${(cp.target_post/10000).toFixed(0)}万</div>
+      </div>
+    </div>
+    <div style="height:14px;background:#f1f5f9;border-radius:7px;overflow:hidden;">
+      <div style="height:100%;width:${Math.min(prePctC,100)}%;background:${preColorC};border-radius:7px;transition:width .6s;"></div>
+    </div>
+  </div>`;
   channels.forEach(ch => {
     const p = ch.p;
     const prePct = (p.completion_pre*100).toFixed(1);
