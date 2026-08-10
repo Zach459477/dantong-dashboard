@@ -213,7 +213,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="combined_data.js?v=23"></script>
+<script src="combined_data.js?v=24"></script>
 <script>
 let D = window.COMBINED_DATA;
 let filteredDaily = [];
@@ -239,12 +239,14 @@ function initDashboard() {
     pf.appendChild(opt);
   });
 
-  // 默认时间范围：最近90天
+  // 默认时间范围：当月第一天 ~ 最新数据日期
   const allDates = D.daily_comparison.map(x => x.date).sort();
   if (allDates.length > 0) {
-    const cutoffIdx = Math.max(0, allDates.length - 90);
-    document.getElementById('startDate').value = allDates[cutoffIdx];
-    document.getElementById('endDate').value = allDates[allDates.length - 1];
+    const lastDate = allDates[allDates.length - 1];
+    const [y, m, d] = lastDate.split('-').map(Number);
+    const firstDayOfMonth = `${y}-${String(m).padStart(2, '0')}-01`;
+    document.getElementById('startDate').value = firstDayOfMonth;
+    document.getElementById('endDate').value = lastDate;
   }
 
   applyFilter();
