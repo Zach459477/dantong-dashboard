@@ -213,7 +213,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=27"></script>
+<script src="vipshop_data.js?v=28"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -241,10 +241,11 @@ function initDashboard() {
 
   const allDates = d.daily_summary.map(x => x.date).sort();
   if (allDates.length > 0) {
-    // Default to last 90 days
-    const cutoffIdx = Math.max(0, allDates.length - 90);
-    document.getElementById('startDate').value = allDates[cutoffIdx];
-    document.getElementById('endDate').value = allDates[allDates.length - 1];
+    // Default to current month through latest date
+    const latest = allDates[allDates.length - 1];
+    const start = latest.slice(0, 7) + '-01';
+    document.getElementById('startDate').value = start;
+    document.getElementById('endDate').value = latest;
   }
   applyFilter();
 }
