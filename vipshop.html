@@ -100,7 +100,32 @@ tr:hover td { background:var(--c-primary-tint); }
 .progress-bar-fill { height:100%; border-radius:5px; transition:width .6s; }
 
 .footer { text-align:center; padding:20px; color:var(--c-text-light); font-size:12px; }
-@media (max-width:768px) { .charts-grid { grid-template-columns:1fr; } .kpi-grid { grid-template-columns:repeat(2,1fr); } }
+
+/* 品类成交板块 */
+.cat-summary-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(168px,1fr)); gap:12px; }
+.cat-chip { background:var(--c-card); border:1px solid var(--c-border); border-radius:10px; padding:12px 14px; cursor:pointer; transition:all .2s; }
+.cat-chip:hover { border-color:var(--c-primary-light); box-shadow:0 2px 8px var(--c-shadow); }
+.cat-chip.active { border-color:var(--c-primary); background:var(--c-primary-tint); }
+.cat-chip .cc-name { font-size:13px; font-weight:600; color:#334155; display:flex; align-items:center; gap:6px; }
+.cat-chip .cc-gmv { font-size:17px; font-weight:700; color:var(--c-primary); margin-top:4px; }
+.cat-chip .cc-meta { font-size:11px; color:var(--c-text-light); margin-top:2px; }
+.cat-chip .cc-bar { height:4px; background:#f1f5f9; border-radius:2px; margin-top:8px; overflow:hidden; }
+.cat-chip .cc-bar-fill { height:100%; background:var(--c-primary-light); border-radius:2px; }
+.cat-detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px,1fr)); gap:16px; margin-bottom:20px; }
+.cat-card { background:var(--c-card); border:1px solid var(--c-border); border-left:4px solid var(--c-primary-light); border-radius:10px; padding:16px 18px; box-shadow:0 1px 3px var(--c-shadow); }
+.cat-card.cat-hot { border-left-color:var(--c-primary); background:linear-gradient(180deg,#fdf2f8 0%,#fff 40%); }
+.cat-card .cat-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
+.cat-card .cat-name { font-size:14px; font-weight:700; color:#334155; }
+.cat-card .cat-stats { font-size:12px; color:var(--c-text-muted); }
+.cat-card .cat-stats b { color:var(--c-primary); font-size:15px; }
+.cat-card table { font-size:12px; }
+.cat-card th { padding:7px 8px; font-size:11px; }
+.cat-card td { padding:7px 8px; }
+.cat-card .pid-cell { font-family:Consolas,monospace; font-size:10px; color:var(--c-text-muted); white-space:nowrap; }
+.cat-card .lnk-name { max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+.cat-none { text-align:center; color:var(--c-text-light); padding:28px 0; font-size:13px; }
+
+@media (max-width:768px) { .charts-grid { grid-template-columns:1fr; } .kpi-grid { grid-template-columns:repeat(2,1fr); } .cat-detail-grid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -128,6 +153,7 @@ tr:hover td { background:var(--c-primary-tint); }
   <a class="nav-link" data-target="section-trends">📈 趋势</a>
   <a class="nav-link" data-target="section-yoy">📊 同比</a>
   <a class="nav-link" data-target="section-progress">🎯 单品进度</a>
+  <a class="nav-link" data-target="section-category">🧴 品类成交</a>
   <a class="nav-link" data-target="section-ranking">🏆 排行</a>
 </nav>
 
@@ -198,6 +224,14 @@ tr:hover td { background:var(--c-primary-tint); }
   </div>
 </div>
 
+<div id="section-category" class="section-anchor">
+  <div class="table-card" style="margin-bottom:20px;">
+    <h3>🧴 品类成交</h3>
+    <div id="categorySummary"></div>
+  </div>
+  <div id="categoryDetail"></div>
+</div>
+
 <div id="section-ranking" class="section-anchor">
   <div class="table-card">
     <h3>🏆 商品GMV排行 TOP20</h3>
@@ -213,7 +247,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=46"></script>
+<script src="vipshop_data.js?v=47"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -282,11 +316,13 @@ function applyFilter() {
   }
 
   filteredDaily = filtered;
+  window._filteredSku = sku;
   buildKPIs(filtered);
   buildCharts(filtered);
   buildYoY();
   buildProgressSummary();
   buildProgress();
+  buildCategory();
   buildProductTable(currentMonth);
 }
 
@@ -658,6 +694,91 @@ function buildProgress() {
   }).join('');
 }
 
+function buildCategory() {
+  const cm = FULL_DATA.category_map || {};
+  const nm = FULL_DATA.name_map || {};
+  const sku = window._filteredSku || [];
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  const rangeLabel = (startDate && endDate) ? `${startDate.slice(5).replace('-','/')}~${endDate.slice(5).replace('-','/')}` : '全部';
+
+  // 按品类聚合（退后口径）
+  const catAgg = {};    // cat -> {gmv_post, qty, uv, buyers}
+  const linkAgg = {};   // cat -> pid -> {gmv_post, qty, uv, buyers}
+  sku.forEach(r => {
+    if (!r.pid) return;
+    const cat = cm[r.pid] || '其他';
+    if (!catAgg[cat]) catAgg[cat] = {gmv_post:0, qty:0, uv:0, buyers:0};
+    if (!linkAgg[cat]) linkAgg[cat] = {};
+    const ca = catAgg[cat];
+    ca.gmv_post += r.gmv_post||0; ca.qty += r.post_qty||0; ca.uv += r.uv||0; ca.buyers += r.buyers||0;
+    const la = linkAgg[cat][r.pid] = linkAgg[cat][r.pid] || {gmv_post:0, qty:0, uv:0, buyers:0};
+    la.gmv_post += r.gmv_post||0; la.qty += r.post_qty||0; la.uv += r.uv||0; la.buyers += r.buyers||0;
+  });
+
+  // 过滤无成交品类，按退后GMV降序
+  const cats = Object.keys(catAgg).filter(c => catAgg[c].gmv_post > 0)
+    .sort((a,b) => catAgg[b].gmv_post - catAgg[a].gmv_post);
+  const totalGmvPost = cats.reduce((s,c) => s+catAgg[c].gmv_post, 0);
+  const totalQty = cats.reduce((s,c) => s+catAgg[c].qty, 0);
+  const summaryEl = document.getElementById('categorySummary');
+  const detailEl = document.getElementById('categoryDetail');
+  if (cats.length === 0) {
+    summaryEl.innerHTML = '<div class="cat-none">当前筛选范围无品类数据</div>';
+    detailEl.innerHTML = '';
+    return;
+  }
+
+  // 顶部品类汇总卡
+  summaryEl.innerHTML =
+    `<div class="cat-summary-grid">` + cats.map((c,i) => {
+      const a = catAgg[c];
+      const pct = totalGmvPost>0 ? a.gmv_post/totalGmvPost*100 : 0;
+      return `<div class="cat-chip ${i===0?'active':''}" onclick="scrollToCat('cat-${i}')" title="点击定位到品类明细">
+        <div class="cc-name">${c}</div>
+        <div class="cc-gmv">¥${(a.gmv_post/10000).toFixed(1)}万</div>
+        <div class="cc-meta">占${pct.toFixed(1)}% · ${a.qty}件</div>
+        <div class="cc-bar"><div class="cc-bar-fill" style="width:${Math.min(pct,100)}%"></div></div>
+      </div>`;
+    }).join('') +
+    `</div><div style="font-size:11px;color:#94a3b8;margin-top:8px;">退后口径 · ${rangeLabel} · 全店退后 ¥${(totalGmvPost/10000).toFixed(2)}万 / ${totalQty}件</div>`;
+
+  // 每品类 TOP3 链接卡
+  detailEl.innerHTML = `<div class="cat-detail-grid">` + cats.map((c,i) => {
+    const a = catAgg[c];
+    const pct = totalGmvPost>0 ? a.gmv_post/totalGmvPost*100 : 0;
+    const catCvr = a.uv>0 ? (a.buyers/a.uv*100) : 0;
+    const links = Object.entries(linkAgg[c]).sort((x,y) => y[1].gmv_post - x[1].gmv_post).slice(0,3);
+    const rows = links.map(([pid, la]) => {
+      const cvr = la.uv>0 ? la.buyers/la.uv*100 : 0;
+      const share = a.gmv_post>0 ? la.gmv_post/a.gmv_post*100 : 0;
+      const name = nm[pid] || pid;
+      return `<tr>
+        <td class="pid-cell" title="${pid}">${pid}</td>
+        <td class="lnk-name" title="${name}">${name}</td>
+        <td style="font-weight:600;color:#be185d;">¥${la.gmv_post.toLocaleString()}</td>
+        <td>${la.qty}件</td>
+        <td>${cvr.toFixed(1)}%</td>
+        <td>${share.toFixed(0)}%</td>
+      </tr>`;
+    }).join('');
+    const hot = i < 3;
+    return `<div class="cat-card ${hot?'cat-hot':''}" id="cat-${i}">
+      <div class="cat-head">
+        <span class="cat-name">${c}</span>
+        <span class="cat-stats">退后 <b>¥${(a.gmv_post/10000).toFixed(1)}万</b> · 占${pct.toFixed(1)}% · ${a.qty}件 · CVR ${catCvr.toFixed(1)}%</span>
+      </div>
+      <table><thead><tr><th>商品ID</th><th>商品名称</th><th>退后GMV</th><th>件数</th><th>CVR</th><th>品类占比</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function scrollToCat(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
 function buildProductTable(currentMonth) {
   const pid = document.getElementById('productFilter').value;
   let ranking, isMonthly;
@@ -707,7 +828,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     }
   });
 });
-const navSections = ['section-overview','section-trends','section-yoy','section-progress','section-ranking'];
+const navSections = ['section-overview','section-trends','section-yoy','section-progress','section-category','section-ranking'];
 let scrollTicking = false;
 window.addEventListener('scroll', () => {
   if (!scrollTicking) {
