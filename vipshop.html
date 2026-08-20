@@ -111,18 +111,25 @@ tr:hover td { background:var(--c-primary-tint); }
 .cat-chip .cc-meta { font-size:11px; color:var(--c-text-light); margin-top:2px; }
 .cat-chip .cc-bar { height:4px; background:#f1f5f9; border-radius:2px; margin-top:8px; overflow:hidden; }
 .cat-chip .cc-bar-fill { height:100%; background:var(--c-primary-light); border-radius:2px; }
-.cat-detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px,1fr)); gap:16px; margin-bottom:20px; }
-.cat-card { background:var(--c-card); border:1px solid var(--c-border); border-left:4px solid var(--c-primary-light); border-radius:10px; padding:16px 18px; box-shadow:0 1px 3px var(--c-shadow); }
+.cat-detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(560px,1fr)); gap:16px; margin-bottom:20px; }
+.cat-card { background:var(--c-card); border:1px solid var(--c-border); border-left:4px solid var(--c-primary-light); border-radius:10px; padding:16px; box-shadow:0 1px 3px var(--c-shadow); overflow:hidden; }
 .cat-card.cat-hot { border-left-color:var(--c-primary); background:linear-gradient(180deg,#fdf2f8 0%,#fff 40%); }
 .cat-card .cat-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
 .cat-card .cat-name { font-size:14px; font-weight:700; color:#334155; }
 .cat-card .cat-stats { font-size:12px; color:var(--c-text-muted); }
 .cat-card .cat-stats b { color:var(--c-primary); font-size:15px; }
-.cat-card table { font-size:12px; }
-.cat-card th { padding:7px 8px; font-size:11px; }
-.cat-card td { padding:7px 8px; }
-.cat-card .pid-cell { font-family:Consolas,monospace; font-size:10px; color:var(--c-text-muted); white-space:nowrap; }
-.cat-card .lnk-name { max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+.cat-card table { font-size:12px; table-layout:fixed; width:100%; }
+.cat-card col.pid { width:70px; }
+.cat-card col.lnk { width:auto; }
+.cat-card col.gmv { width:88px; }
+.cat-card col.qty { width:54px; }
+.cat-card col.cvr { width:54px; }
+.cat-card col.share { width:64px; }
+.cat-card th { padding:7px 6px; font-size:11px; }
+.cat-card td { padding:7px 6px; vertical-align:middle; }
+.cat-card .pid-cell { font-family:Consolas,monospace; font-size:10px; color:var(--c-text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cat-card .lnk-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+.cat-card .cell-num { white-space:nowrap; }
 .cat-none { text-align:center; color:var(--c-text-light); padding:28px 0; font-size:13px; }
 
 @media (max-width:768px) { .charts-grid { grid-template-columns:1fr; } .kpi-grid { grid-template-columns:repeat(2,1fr); } .cat-detail-grid { grid-template-columns:1fr; } }
@@ -247,7 +254,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=47"></script>
+<script src="vipshop_data.js?v=48"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -753,13 +760,14 @@ function buildCategory() {
       const cvr = la.uv>0 ? la.buyers/la.uv*100 : 0;
       const share = a.gmv_post>0 ? la.gmv_post/a.gmv_post*100 : 0;
       const name = nm[pid] || pid;
+      const pidShort = pid.length > 8 ? '…' + pid.slice(-8) : pid;
       return `<tr>
-        <td class="pid-cell" title="${pid}">${pid}</td>
+        <td class="pid-cell" title="${pid}">${pidShort}</td>
         <td class="lnk-name" title="${name}">${name}</td>
-        <td style="font-weight:600;color:#be185d;">¥${la.gmv_post.toLocaleString()}</td>
-        <td>${la.qty}件</td>
-        <td>${cvr.toFixed(1)}%</td>
-        <td>${share.toFixed(0)}%</td>
+        <td class="cell-num" style="font-weight:600;color:#be185d;">¥${la.gmv_post.toLocaleString()}</td>
+        <td class="cell-num">${la.qty}件</td>
+        <td class="cell-num">${cvr.toFixed(1)}%</td>
+        <td class="cell-num">${share.toFixed(0)}%</td>
       </tr>`;
     }).join('');
     const hot = i < 3;
@@ -768,8 +776,10 @@ function buildCategory() {
         <span class="cat-name">${c}</span>
         <span class="cat-stats">退后 <b>¥${(a.gmv_post/10000).toFixed(1)}万</b> · 占${pct.toFixed(1)}% · ${a.qty}件 · CVR ${catCvr.toFixed(1)}%</span>
       </div>
-      <table><thead><tr><th>商品ID</th><th>商品名称</th><th>退后GMV</th><th>件数</th><th>CVR</th><th>品类占比</th></tr></thead>
-      <tbody>${rows}</tbody></table>
+      <table>
+        <colgroup><col class="pid"><col class="lnk"><col class="gmv"><col class="qty"><col class="cvr"><col class="share"></colgroup>
+        <thead><tr><th>商品ID</th><th>商品名称</th><th>退后GMV</th><th>件数</th><th>CVR</th><th>品类占比</th></tr></thead>
+        <tbody>${rows}</tbody></table>
     </div>`;
   }).join('') + `</div>`;
 }
