@@ -111,7 +111,7 @@ tr:hover td { background:var(--c-primary-tint); }
 .cat-chip .cc-meta { font-size:11px; color:var(--c-text-light); margin-top:2px; }
 .cat-chip .cc-bar { height:4px; background:#f1f5f9; border-radius:2px; margin-top:8px; overflow:hidden; }
 .cat-chip .cc-bar-fill { height:100%; background:var(--c-primary-light); border-radius:2px; }
-.cat-detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(560px,1fr)); gap:16px; margin-bottom:20px; }
+.cat-detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(640px,1fr)); gap:16px; margin-bottom:20px; }
 .cat-card { background:var(--c-card); border:1px solid var(--c-border); border-left:4px solid var(--c-primary-light); border-radius:10px; padding:16px; box-shadow:0 1px 3px var(--c-shadow); overflow:hidden; }
 .cat-card.cat-hot { border-left-color:var(--c-primary); background:linear-gradient(180deg,#fdf2f8 0%,#fff 40%); }
 .cat-card .cat-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
@@ -119,15 +119,15 @@ tr:hover td { background:var(--c-primary-tint); }
 .cat-card .cat-stats { font-size:12px; color:var(--c-text-muted); }
 .cat-card .cat-stats b { color:var(--c-primary); font-size:15px; }
 .cat-card table { font-size:12px; table-layout:fixed; width:100%; }
-.cat-card col.pid { width:70px; }
-.cat-card col.lnk { width:auto; }
+.cat-card col.pid { width:150px; }
+.cat-card col.lnk { width:auto; min-width:80px; }
 .cat-card col.gmv { width:88px; }
 .cat-card col.qty { width:54px; }
 .cat-card col.cvr { width:54px; }
 .cat-card col.share { width:64px; }
 .cat-card th { padding:7px 6px; font-size:11px; }
 .cat-card td { padding:7px 6px; vertical-align:middle; }
-.cat-card .pid-cell { font-family:Consolas,monospace; font-size:10px; color:var(--c-text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cat-card .pid-cell { font-family:Consolas,monospace; font-size:11px; color:var(--c-text-muted); white-space:nowrap; }
 .cat-card .lnk-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
 .cat-card .cell-num { white-space:nowrap; }
 .cat-none { text-align:center; color:var(--c-text-light); padding:28px 0; font-size:13px; }
@@ -254,7 +254,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=50"></script>
+<script src="vipshop_data.js?v=51"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -760,9 +760,8 @@ function buildCategory() {
       const cvr = la.uv>0 ? la.buyers/la.uv*100 : 0;
       const share = a.gmv_post>0 ? la.gmv_post/a.gmv_post*100 : 0;
       const name = nm[pid] || pid;
-      const pidShort = pid.length > 8 ? '…' + pid.slice(-8) : pid;
       return `<tr>
-        <td class="pid-cell" title="${pid}">${pidShort}</td>
+        <td class="pid-cell">${pid}</td>
         <td class="lnk-name" title="${name}">${name}</td>
         <td class="cell-num" style="font-weight:600;color:#be185d;">¥${la.gmv_post.toLocaleString()}</td>
         <td class="cell-num">${la.qty}件</td>
