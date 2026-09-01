@@ -354,7 +354,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="dashboard_data.js?v=91"></script>
+<script src="dashboard_data.js?v=92"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -726,7 +726,7 @@ function buildCharts(data) {
 // ============ 甘特图 ============
 function buildGanttCharts() {
   const d = FULL_DATA;
-  if (!d.july_activity_summary && !d.aug_activity_summary) return;
+  if (!d.aug_activity_summary) return;
 
   const dailyMap = {};
   d.daily_summary.forEach(ds => { dailyMap[ds.date] = ds; });
@@ -862,7 +862,7 @@ function buildGanttCharts() {
     });
 
     // 图例
-    const legendId = canvasId === 'ganttJuly' ? 'ganttJulyLegend' : 'ganttAugLegend';
+    const legendId = canvasId + 'Legend';
     const lg = document.getElementById(legendId);
     if (lg) {
       const items = [];
