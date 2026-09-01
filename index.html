@@ -306,13 +306,13 @@ tr:hover td { background:var(--c-primary-tint); }
 </div>
 </div>
 
-<!-- 甘特图：7月 & 8月 -->
+<!-- 甘特图：8月 & 9月 -->
 <div id="section-activities" class="section-anchor">
 <div class="charts-grid">
   <div class="chart-card full-width">
-    <h3>📅 7月活动甘特图（活动结果）</h3>
-    <canvas id="ganttJuly"></canvas>
-    <div style="font-size:12px;color:#94a3b8;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;" id="ganttJulyLegend"></div>
+    <h3>📅 9月营销排期（计划）</h3>
+    <canvas id="ganttSept"></canvas>
+    <div style="font-size:12px;color:#94a3b8;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;" id="ganttSeptLegend"></div>
   </div>
   <div class="chart-card full-width">
     <h3>📅 8月活动甘特图（活动结果）</h3>
@@ -354,7 +354,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="dashboard_data.js?v=90"></script>
+<script src="dashboard_data.js?v=91"></script>
 <script>
 // ============ 数据加载 ============
 let FULL_DATA = window.DASHBOARD_DATA;
@@ -885,53 +885,30 @@ function buildGanttCharts() {
     }
   }
 
-  // --- 7月甘特 ---
-  if (d.july_activity_summary) {
-    // 按营销日历顺序，每段独立，含重叠
-    const julyAllActs = [
-      {name: '超级星期五', level: 'A', segments: [{start:'2026-07-03',end:'2026-07-05',days:3}], gmv_post: 0, days: 3, avg_post: 0},
-      {name: '超级88', level: 'S', segments: [{start:'2026-07-07',end:'2026-07-09',days:3}], gmv_post: 0, days: 3, avg_post: 0},
-      {name: '超级星期五', level: 'A', segments: [{start:'2026-07-10',end:'2026-07-12',days:3}], gmv_post: 0, days: 3, avg_post: 0},
-      {name: '清凉季', level: 'A', segments: [{start:'2026-07-14',end:'2026-07-20',days:7}], gmv_post: 0, days: 7, avg_post: 0},
-      {name: '超级88', level: 'S', segments: [{start:'2026-07-17',end:'2026-07-19',days:3}], gmv_post: 0, days: 3, avg_post: 0},
-      {name: '超级星期五', level: 'A', segments: [{start:'2026-07-17',end:'2026-07-19',days:3}], gmv_post: 0, days: 3, avg_post: 0},
-      {name: '超级星期五', level: 'A', segments: [{start:'2026-07-24',end:'2026-07-26',days:3}], gmv_post: 0, days: 3, avg_post: 0},
-      {name: '狂暑季', level: 'S', segments: [{start:'2026-07-26',end:'2026-07-31',days:6}], gmv_post: 0, days: 6, avg_post: 0},
-    ];
+  // --- 9月营销排期（计划） ---
+  // 数据来源：2026年9月营销日历（官方立减8.8折+消费券X折；超级星期五每周五-周日）
+  const septAllActs = [
+    {name: '超级星期五', level: 'A', segments: [
+      {start:'2026-09-04',end:'2026-09-06',days:3},
+      {start:'2026-09-11',end:'2026-09-13',days:3},
+      {start:'2026-09-18',end:'2026-09-20',days:3},
+      {start:'2026-09-25',end:'2026-09-27',days:3},
+    ], gmv_post: 0, days: 12, avg_post: 0},
+    {name: '超级88大促', level: 'S', segments: [
+      {start:'2026-09-06',end:'2026-09-13',days:8},
+    ], gmv_post: 0, days: 8, avg_post: 0},
+    {name: '非活动日', level: '-', segments: [
+      {start:'2026-09-01',end:'2026-09-03',days:3},
+      {start:'2026-09-07',end:'2026-09-10',days:4},
+      {start:'2026-09-14',end:'2026-09-17',days:4},
+      {start:'2026-09-21',end:'2026-09-24',days:4},
+      {start:'2026-09-28',end:'2026-09-30',days:3},
+    ], gmv_post: 0, days: 18, avg_post: 0},
+  ];
 
-    // Merge real data
-    const julySummary = d.july_activity_summary;
-    julyAllActs.forEach(act => {
-      const real = julySummary.find(s => s.name === act.name);
-      if (real) {
-        act.gmv_post = real.gmv_post;
-        act.avg_post = real.avg_post;
-        act.days = real.days;
-      }
-    });
+  // 9月为计划排期，暂无真实销售数据合并；保留结构供后续自动回填
+  drawGantt('ganttSept', septAllActs, 30, '9月', true);
 
-    // Calculate gmv_post for each individual segment from daily data
-    julyAllActs.forEach(act => {
-      act.segments.forEach(seg => {
-        let pre = 0, post = 0, cnt = 0;
-        const s = new Date(seg.start);
-        const e = new Date(seg.end);
-        for (let dt = new Date(s); dt <= e; dt.setDate(dt.getDate() + 1)) {
-          const ds = dt.toISOString().slice(0, 10);
-          if (dailyMap[ds]) {
-            pre += dailyMap[ds].gmv || 0;
-            post += dailyMap[ds].gmv_post || 0;
-            cnt++;
-          }
-        }
-        seg.gmv_pre = Math.round(pre);
-        seg.gmv_post = Math.round(post);
-        seg.days = cnt;
-      });
-    });
-
-    drawGantt('ganttJuly', julyAllActs, 31, '7月', true);
-  }
 
   // --- 8月甘特 ---
   if (d.aug_activity_summary) {
