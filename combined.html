@@ -213,7 +213,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="combined_data.js?v=131"></script>
+<script src="combined_data.js?v=132"></script>
 <script>
 let D = window.COMBINED_DATA;
 let filteredDaily = [];
@@ -235,7 +235,7 @@ function initDashboard() {
   D.top_products.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.pid;
-    opt.textContent = (p.pid||'').substring(0,12) + ' - ' + (p.name||'').substring(0, 28);
+    opt.textContent = (p.pid||'') + ' - ' + (p.name||'').substring(0, 28);
     pf.appendChild(opt);
   });
 
@@ -782,7 +782,7 @@ function buildProductTable(currentMonth, pid) {
     return `<tr>
       <td style="font-weight:700;">#${i+1}</td>
       <td><span class="badge ${chBadge}">${chLabel}</span></td>
-      <td style="font-family:monospace;font-size:11px;">${(p.pid||'').substring(0,16)}</td>
+      <td style="font-family:monospace;font-size:11px;user-select:all;cursor:copy;" title="点击复制完整商品ID：${p.pid||''}" onclick="try{navigator.clipboard.writeText('${p.pid||''}')}catch(e){}">${p.pid||''}</td>
       <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
       <td style="font-weight:700;">¥${(p.gmv||0).toLocaleString()}</td>
       <td>¥${gmvPost.toLocaleString()}</td>
