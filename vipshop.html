@@ -254,7 +254,7 @@ tr:hover td { background:var(--c-primary-tint); }
 
 </div>
 
-<script src="vipshop_data.js?v=131"></script>
+<script src="vipshop_data.js?v=132"></script>
 <script>
 let FULL_DATA = window.VIPSHOP_DATA;
 let filteredDaily = [];
@@ -276,7 +276,7 @@ function initDashboard() {
   d.product_ranking.slice(0, 50).forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.pid;
-    opt.textContent = p.pid.substring(0,12) + ' - ' + p.name.substring(0, 28);
+    opt.textContent = p.pid + ' - ' + p.name.substring(0, 28);
     pf.appendChild(opt);
   });
 
@@ -810,7 +810,7 @@ function buildProductTable(currentMonth) {
     const yearQty = isMonthly ? (p.year_qty||0) : p.qty;
     return `<tr>
       <td style="font-weight:700;">#${i+1}</td>
-      <td style="font-family:monospace;font-size:11px;">${p.pid.substring(0,16)}</td>
+      <td style="font-family:monospace;font-size:11px;user-select:all;cursor:copy;" title="点击复制完整商品ID：${p.pid}" onclick="try{navigator.clipboard.writeText('${p.pid}')}catch(e){}">${p.pid}</td>
       <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.name}">${p.name}</td>
       <td style="font-weight:600;">¥${yearGmv.toLocaleString()}</td>
       <td>${yearQty.toLocaleString()}</td>
